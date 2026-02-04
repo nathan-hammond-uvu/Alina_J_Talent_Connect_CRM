@@ -1,4 +1,3 @@
-```python
 import pandas as pd
 
 data = {
@@ -50,75 +49,67 @@ class User:
         self.role_id = role_id
         self.person_id = person_id
 
-def login():
-    while True:
-        username = input("Enter your username: ")
-        matching_user = next((user for user in data["users"] if user["username"] == username), None)
 
-        if not matching_user:
-            print("Invalid username. Please try again.")
-            continue
+class Deal:
+    def __init__(self, influencer_id, brand_id, brand_rep_id, pitch_date, is_active, is_successful):
+        self.deal_id = get_next_id()
+        self.influencer_id = influencer_id
+        self.brand_id = brand_id
+        self.brand_rep_id = brand_rep_id
+        self.pitch_date = pitch_date
+        self.is_active = is_active
+        self.is_successful = is_successful
 
-        password = input("Enter your password: ")
-        if matching_user["password"] == password:
-            print(f"Login successful! Welcome, {matching_user['username']}.")
-            inside_welcome_page(matching_user)
-            break
-        else:
-            print("Incorrect password. Please try again.")
 
-def register():
-    print("Registering a new user")
+class Contract:
+    def __init__(self, deal_id, details, payment, agency_percentage, start_date, end_date, status, is_approved):
+        self.contract_id = get_next_id()
+        self.deal_id = deal_id
+        self.details = details
+        self.payment = payment
+        self.agency_percentage = agency_percentage
+        self.start_date = start_date
+        self.end_date = end_date
+        self.status = status
+        self.is_approved = is_approved
 
-    first_name = input("First Name: ")
-    last_name = input("Last Name: ")
-    full_name = f"{first_name} {last_name}"
-    display_name = input("Display Name: ")
-    email = input("Email: ")
-    phone = input("Phone: ")
-    address = input("Address: ")
-    city = input("City: ")
-    state = input("State: ")
-    zip_code = input("ZIP Code: ")
-    
-    person = Person(first_name, last_name, full_name, display_name, email, phone, address, city, state, zip_code)
-    data["persons"].append(person.__dict__)
+def view_deals():
+    print("\n------ Deals ------")
+    for deal in data["deals"]:
+        print(deal)
+    print("\n-------------------")
 
-    username = input("Choose a username: ")
-    password = input("Choose a password: ")
+def create_deal():
+    influencer_id = int(input("Enter Influencer ID: "))
+    brand_id = int(input("Enter Brand ID: "))
+    brand_rep_id = int(input("Enter Brand Representative ID: "))
+    pitch_date = input("Enter Pitch Date (YYYY-MM-DD): ")
+    is_active = input("Is the deal active? (yes/no): ").lower() == "yes"
+    is_successful = input("Is the deal successful? (yes/no): ").lower() == "yes"
 
-    # Assign the "user" role by default
-    role = next((r for r in data["roles"] if r["role_name"] == "user"), None)
-    if not role:
-        print("Error: 'user' role not found.")
-        return
+    new_deal = Deal(influencer_id, brand_id, brand_rep_id, pitch_date, is_active, is_successful)
+    data["deals"].append(new_deal.__dict__)
+    print(f"Deal {new_deal.deal_id} created successfully!")
 
-    user = User(username, password, role["role_id"], person.person_id)
-    data["users"].append(user.__dict__)
+def view_contracts():
+    print("\n------ Contracts ------")
+    for contract in data["contracts"]:
+        print(contract)
+    print("\n-----------------------")
 
-    print("Registration successful! You can now log in.")
+def create_contract():
+    deal_id = int(input("Enter Deal ID: "))
+    details = input("Enter Contract Details: ")
+    payment = float(input("Enter Payment Amount: "))
+    agency_percentage = float(input("Enter Agency Percentage: "))
+    start_date = input("Enter Start Date (YYYY-MM-DD): ")
+    end_date = input("Enter End Date (YYYY-MM-DD): ")
+    status = input("Enter Contract Status (e.g., Sent, Pending, Accepted, Rejected): ")
+    is_approved = input("Is the contract approved? (yes/no): ").lower() == "yes"
 
-def exit_system():
-    print("Exiting Alina J Talent Management System. Goodbye!")
-    exit()
-
-def outside_welcome_page():
-    while True:
-        print("Welcome to Alina J Talent Management System!")
-        print("1. Login")
-        print("2. Register")
-        print("3. Exit")
-        choice = input("Enter your choice (1-3): ")
-
-        if choice == "1":
-            login()
-        elif choice == "2":
-            register()
-        elif choice == "3":
-            exit_system()
-        else:
-            print("Invalid choice, please try again.")
-
+    new_contract = Contract(deal_id, details, payment, agency_percentage, start_date, end_date, status, is_approved)
+    data["contracts"].append(new_contract.__dict__)
+    print(f"Contract {new_contract.contract_id} created successfully!")
 
 def inside_welcome_page(user):
     role = next((r for r in data["roles"] if r["role_id"] == user["role_id"]), None)
@@ -126,12 +117,30 @@ def inside_welcome_page(user):
     print(f"Welcome to the Inside Welcome Page, {user['username']}!")
     print(f"Your role: {role['role_name']}")
 
-    if role["role_name"] in ["Employee", "Manager", "Admin"]:
-        print("You have management tasks available here.")
-        # Implementation for management tasks goes here
-    elif role["role_name"] in ["User", "Client", "Rep"]:
-        print("You can view deals/campaigns.")
-        # Implementation for deal/campaign viewing goes here
+    while True:
+        if role and role["role_name"] in ["Admin", "Manager", "Employee"]:
+            print("1. View Deals")
+            print("2. Create Deal")
+            print("3. View Contracts")
+            print("4. Create Contract")
+            print("5. Log Out")
+            
+            choice = input("Enter your choice: ")
+
+            if choice == "1":
+                view_deals()
+            elif choice == "2":
+                create_deal()
+            elif choice == "3":
+                view_contracts()
+            elif choice == "4":
+                create_contract()
+            elif choice == "5":
+                print("Logging out...")
+                break
+            else:
+                print("Invalid option. Please try again.")
+
 
 def main():
     # Create sample data
@@ -142,6 +151,6 @@ def main():
 
     outside_welcome_page()
 
+
 if __name__ == "__main__":
     main()
-```
