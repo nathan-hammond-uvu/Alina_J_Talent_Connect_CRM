@@ -9,9 +9,8 @@ data = {
     "Influencers": []
      etc... (continue for all tables in the data model in the readme.md)
 }
-The CLI should loop continuously. It should also prompt the user for next possible options/steps. It should only exit if the users chooses to. 
-
 ```
+The CLI should loop continuously. It should also prompt the user for next possible options/steps. It should only exit if the users chooses to. 
   
 ## Casual Loop Diagram (CLD)
 
