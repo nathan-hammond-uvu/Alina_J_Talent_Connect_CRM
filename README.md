@@ -18,8 +18,9 @@
 
 The system provides full CRUD (Create, Read, Update, Delete) capabilities for the following entities:
 
-- Users
+- Roles
 - Persons
+- Users
 - Talent Managers
 - Influencers
 - Social Media Accounts
@@ -55,15 +56,12 @@ The system provides full CRUD (Create, Read, Update, Delete) capabilities for th
 
 ## Data Model
 
-### Users
+### Roles
 
 | Field | Type | Description |
 |------|------|-------------|
-| User_ID (PK) | Int | Unique user identifier |
-| Username | String | Login username |
-| Password | String (encrypted) | Login password |
-| Account_ID | Int | Associated account identifier |
-| Person_ID | Int | Associated person record |
+| Role_ID (PK) | Int | Unique user identifier |
+| Role_name | String | Name of the role |
 
 ### Persons
 
@@ -80,6 +78,16 @@ The system provides full CRUD (Create, Read, Update, Delete) capabilities for th
 | City | String | City |
 | State | String | State |
 | Zip | String | ZIP code |
+
+### Users
+
+| Field | Type | Description |
+|------|------|-------------|
+| User_ID (PK) | Int | Unique user identifier |
+| Username | String | Login username |
+| Password | String (encrypted) | Login password |
+| Role_ID | Int | Associated role identifier |
+| Person_ID | Int | Associated person record |
 
 ### Talent Managers
 
