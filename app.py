@@ -1,4 +1,3 @@
-
 import pandas as pd
 
 data = {
@@ -386,7 +385,7 @@ def add_entity(user, role):
 
 def main():
     # Create sample data
-    roles = ["user", "Employee", "Manager", "Admin"]
+    roles = ["User", "Employee", "Manager", "Admin"]
     for role_name in roles:
         role_instance = Role(role_name)
         data["roles"].append(role_instance.__dict__)
