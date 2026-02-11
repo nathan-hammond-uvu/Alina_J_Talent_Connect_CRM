@@ -1,4 +1,5 @@
 import pandas as pd
+import sys
 
 data = {
     "roles": [],
@@ -102,14 +103,19 @@ def login():
         matching_user = next((user for user in data["users"] if user["username"] == username), None)
 
         if not matching_user:
-            print("Invalid username. Please try again.")
-            continue
+            print("Invalid username.")
+            choice = input("Options: (1) Try again, (2) Register: ")
+            if choice == '2':
+                register()
+                return # register handles login and returns here, so we return to outside_welcome_page
+            else:
+                continue
 
         password = input("Enter your password: ")
         if matching_user["password"] == password:
             print(f"Login successful! Welcome, {matching_user['username']}.")
-            inside_welcome_page(matching_user)
-            break
+            main_navigation_page(matching_user)
+            return # After logout, return to the outside_welcome_page
         else:
             print("Incorrect password. Please try again.")
 
@@ -134,7 +140,7 @@ def register():
     password = input("Choose a password: ")
 
     # Assign the "user" role by default
-    role = next((r for r in data["roles"] if r["role_name"] == "user"), None)
+    role = next((r for r in data["roles"] if r["role_name"] == "User"), None)
     if not role:
         print("Error: 'user' role not found.")
         return
@@ -142,11 +148,12 @@ def register():
     user = User(username, password, role["role_id"], person.person_id)
     data["users"].append(user.__dict__)
 
-    print("Registration successful! You can now log in.")
+    print("Registration successful! Logging you in.")
+    main_navigation_page(user.__dict__)
 
 def exit_system():
     print("Exiting Alina J Talent Management System. Goodbye!")
-    exit()
+    sys.exit()
 
 def outside_welcome_page():
     while True:
@@ -261,127 +268,235 @@ def add_influencer():
     data["influencers"].append(new_influencer.__dict__)
     print(f"Influencer {new_influencer.influencer_id} added successfully!")
 
+def modify_influencer():
+    influencer_id = int(input("Enter Influencer ID to modify: "))
+    influencer = next((i for i in data["influencers"] if i["influencer_id"] == influencer_id), None)
 
-def inside_welcome_page(user):
-    """Main entry point for the Inside Welcome Page based on the user role."""
+    if not influencer:
+        print("Influencer not found.")
+        return
+
+    print(f"Current data: {influencer}")
+    description = input("Enter new Description (leave blank to keep current): ") or influencer["description"]
+    talent_manager_id = input("Enter new Talent Manager ID (leave blank to keep current): ") or influencer["talent_manager_id"]
+
+    influencer.update({
+        "description": description,
+        "talent_manager_id": int(talent_manager_id)
+    })
+    print("Influencer updated successfully!")
+
+def delete_influencer():
+    influencer_id = int(input("Enter Influencer ID to delete: "))
+    initial_len = len(data["influencers"])
+    data["influencers"] = [i for i in data["influencers"] if i["influencer_id"] != influencer_id]
+    if len(data["influencers"]) < initial_len:
+        print("Influencer deleted successfully!")
+    else:
+        print("Influencer not found.")
+
+def home_page(user, role):
+    role_name = role["role_name"]
+    print(f"Welcome to the Home Page, {user['username']}!")
+
+    if role_name in ["Employee", "Manager", "Admin"]:
+        print("\n--- Direct Reports ---")
+        direct_reports = []
+        if role_name == "Admin":
+            direct_reports = data["talent_managers"]
+        elif role_name == "Manager":
+            direct_reports = [tm for tm in data["talent_managers"] if tm.get("manager_id") == user["person_id"]]
+        elif role_name == "Employee":
+            # Assuming an "Employee" is a Talent Manager, find their TM record to find their influencers
+            tm_record = next((tm for tm in data["talent_managers"] if tm.get("person_id") == user["person_id"]), None)
+            if tm_record:
+                direct_reports = [i for i in data["influencers"] if i.get("talent_manager_id") == tm_record["talent_manager_id"]]
+
+        for i, report in enumerate(direct_reports, start=1):
+            print(f"{i}. {report}")
+        print("\n(Management for reports is handled on the Employees/Clients pages)")
+
+    elif role_name in ["User", "Client", "Rep"]:
+        print("\n--- Your Deals/Campaigns ---")
+        # NOTE: The data model doesn't directly link a "User" to a "Deal".
+        # This is a placeholder showing all deals. A real implementation would need a clear link.
+        deals = data["deals"]
+        if not deals:
+            print("No deals found.")
+        for i, deal in enumerate(deals, start=1):
+            print(f"{i}. {deal}")
+    else:
+        print("No specific home page view for your role.")
+
+def search_page(user, role):
+    search_term = input("Enter search term: ").lower()
+    results = []
+    # This is a simplified search. A real implementation would need more sophisticated matching and ranking.
+    # TODO: Add role-based access control to filter search results based on user jurisdiction.
+    for entity_type, entity_list in data.items():
+        for item in entity_list:
+            for value in item.values():
+                if search_term in str(value).lower():
+                    results.append((entity_type, item))
+                    break # Move to next item once a match is found in the current one
+
+    if not results:
+        print("No results found.")
+        return
+
+    print("\n--- Search Results ---")
+    for i, (entity_type, item) in enumerate(results, start=1):
+        print(f"{i}. Type: {entity_type.replace('_', ' ').title()}, Data: {item}")
+
+    print(f"\n{len(results) + 1}. Return to Main Menu")
+
+    while True:
+        try:
+            choice = int(input("Select a result to view details (or return to menu): "))
+            if 1 <= choice <= len(results):
+                print("\n--- Detailed View ---")
+                print(results[choice - 1])
+                print("---------------------\n")
+            elif choice == len(results) + 1:
+                return
+            else:
+                print("Invalid selection.")
+        except ValueError:
+            print("Please enter a number.")
+
+def employees_page(user, role):
+    print("--- All Employees (Talent Managers) ---")
+    for tm in data["talent_managers"]:
+        print(tm)
+
+    while True:
+        print("\nEmployee Menu:")
+        print("1. Add New Employee")
+        print("2. Modify Employee")
+        print("3. Delete Employee")
+        print("4. Return to Main Menu")
+        choice = input("Enter your choice: ")
+
+        if choice == '1':
+            add_talent_manager()
+        elif choice == '2':
+            modify_talent_manager()
+        elif choice == '3':
+            delete_talent_manager()
+        elif choice == '4':
+            return
+        else:
+            print("Invalid choice.")
+
+def clients_page(user, role):
+    role_name = role["role_name"]
+    print("--- Clients (Influencers) ---")
+    
+    influencers_to_show = []
+    if role_name == "Employee":
+        talent_manager = next((tm for tm in data["talent_managers"] if tm["person_id"] == user["person_id"]), None)
+        if talent_manager:
+            influencers_to_show = [i for i in data["influencers"] if i["talent_manager_id"] == talent_manager["talent_manager_id"]]
+        else:
+            print("You are not registered as a Talent Manager.")
+    elif role_name in ["Manager", "Admin"]:
+        influencers_to_show = data["influencers"]
+
+    for i in influencers_to_show:
+        print(i)
+
+    while True:
+        print("\nClient Menu:")
+        print("1. Add New Client (Influencer)")
+        print("2. Modify Client (Influencer)")
+        print("3. Delete Client (Influencer)")
+        print("4. Return to Main Menu")
+        choice = input("Enter your choice: ")
+
+        if choice == '1':
+            add_influencer()
+        elif choice == '2':
+            modify_influencer()
+        elif choice == '3':
+            delete_influencer()
+        elif choice == '4':
+            return
+        else:
+            print("Invalid choice.")
+
+def brands_page(user, role):
+    view_entities("brands")
+
+def deals_page(user, role):
+    view_deals()
+    choice = input("\n1. Create a new deal\n2. Return to menu\nEnter choice: ")
+    if choice == '1':
+        create_deal()
+
+def contracts_page(user, role):
+    view_contracts()
+    choice = input("\n1. Create a new contract\n2. Return to menu\nEnter choice: ")
+    if choice == '1':
+        create_contract()
+
+def performance_page(user, role):
+    print("Performance metrics, Goals, and KPIs coming soon!")
+
+def tasks_page(user, role):
+    print("A list of pending deals and contracts will be shown here.")
+
+def discover_page(user, role):
+    print("AI-powered social media discovery coming soon!")
+
+def settings_page(user, role):
+    print("User profile settings page coming soon.")
+
+def main_navigation_page(user):
     role = next((r for r in data["roles"] if r["role_id"] == user["role_id"]), None)
-
     if not role:
         print("Role not found for user.")
         return
 
-    print(f"Welcome to the Inside Welcome Page, {user['username']}!")
-    print(f"Your role: {role['role_name']}")
+    role_name = role["role_name"]
 
     while True:
-        role_name = role["role_name"]
+        print("\n--- Main Menu ---")
+        menu_options = {}
+        current_option = 1
 
+        # Build menu dynamically
+        def add_option(name, func):
+            nonlocal current_option
+            print(f"{current_option}. {name}")
+            menu_options[str(current_option)] = (name, func)
+            current_option += 1
+
+        add_option("Home", home_page)
+        add_option("Search", search_page)
         if role_name in ["Employee", "Manager", "Admin"]:
-            handle_employee_manager_admin(user, role)
-        elif role_name in ["User", "Client", "Rep"]:
-            handle_user_client_rep(user, role)
-        else:
-            print("Role not recognized. Logging out.")
-            break
-
-
-def handle_employee_manager_admin(user, role):
-    """Handle actions for Employee, Manager, and Admin roles."""
-    while True:
-        print("\nYour Direct Reports:")
-        if role["role_name"] == "Admin":
-            direct_reports = [m for m in data["talent_managers"]]
-        elif role["role_name"] == "Manager":
-            direct_reports = [tm for tm in data["talent_managers"] if tm["manager_id"] == user["person_id"]]
-        elif role["role_name"] == "Employee":
-            direct_reports = [i for i in data["influencers"] if i["talent_manager_id"] == user["person_id"]]
-        else:
-            direct_reports = []
-
-        for i, report in enumerate(direct_reports, start=1):
-            print(f"{i}. {report}")
-
-        print("\nOptions:")
-        print("1. View a Direct Report")
-        print("2. Modify a Direct Report")
-        print("3. Delete a Direct Report")
-        print("4. Add a New Direct Report")
-        print("5. Log Out")
+            add_option("Clients", clients_page)
+        if role_name in ["Manager", "Admin"]:
+            add_option("Employees", employees_page)
+        add_option("Brands", brands_page)
+        add_option("Deals", deals_page)
+        add_option("Contracts", contracts_page)
+        add_option("Performance", performance_page)
+        add_option("Tasks", tasks_page)
+        add_option("Discover", discover_page)
+        add_option("Settings", settings_page)
+        print("0. Log Out")
 
         choice = input("Enter your choice: ")
 
-        if choice == "1":
-            view_entity(direct_reports)
-        elif choice == "2":
-            modify_entity(direct_reports)
-        elif choice == "3":
-            delete_entity(direct_reports)
-        elif choice == "4":
-            add_entity(user, role)
-        elif choice == "5":
+        if choice == "0":
             print("Logging out...")
             break
+        elif choice in menu_options:
+            page_name, page_function = menu_options[choice]
+            print(f"\n>>> Navigating to {page_name}...")
+            page_function(user, role)
         else:
-            print("Invalid option. Please try again.")
-
-
-def handle_user_client_rep(user, role):
-    """Handle actions for User, Client, and Rep roles."""
-    while True:
-        print("\nYour Deals/Campaigns:")
-        campaigns = [c for c in data["campaigns"] if c["user_id"] == user["user_id"]]
-
-        for i, campaign in enumerate(campaigns, start=1):
-            print(f"{i}. {campaign}")
-
-        print("\nOptions:")
-        print("1. View a Deal/Campaign")
-        print("2. Log Out")
-
-        choice = input("Enter your choice: ")
-
-        if choice == "1":
-            view_entity(campaigns)
-        elif choice == "2":
-            print("Logging out...")
-            break
-        else:
-            print("Invalid option. Please try again.")
-
-
-def view_entity(entities):
-    """View details of a specific entity."""
-    entity_index = int(input("Enter the number of the entity to view: ")) - 1
-    if 0 <= entity_index < len(entities):
-        print(f"Details: {entities[entity_index]}")
-    else:
-        print("Invalid selection.")
-
-
-def modify_entity(entities):
-    """Modify details of a specific entity."""
-    entity_index = int(input("Enter the number of the entity to modify: ")) - 1
-    if 0 <= entity_index < len(entities):
-        print(f"Current details: {entities[entity_index]}")
-        # Collect updated fields here, similar to the `modify_talent_manager` function.
-        print("Modification not implemented yet.")  # Placeholder
-    else:
-        print("Invalid selection.")
-
-
-def delete_entity(entities):
-    """Delete a specific entity."""
-    entity_index = int(input("Enter the number of the entity to delete: ")) - 1
-    if 0 <= entity_index < len(entities):
-        entity_to_delete = entities.pop(entity_index)
-        print(f"Deleted: {entity_to_delete}")
-    else:
-        print("Invalid selection.")
-
-
-def add_entity(user, role):
-    """Add a new entity based on user role."""
-    print("Adding a new entity is not implemented yet.")  # Placeholder
+            print("Invalid choice, please try again.")
 
 def main():
     # Create sample data
@@ -389,6 +504,15 @@ def main():
     for role_name in roles:
         role_instance = Role(role_name)
         data["roles"].append(role_instance.__dict__)
+
+    # Create a default admin user
+    admin_role = next((r for r in data["roles"] if r["role_name"] == "Admin"), None)
+    if admin_role:
+        admin_person = Person("Admin", "User", "Admin User", "Admin", "admin@example.com", "N/A", "N/A", "N/A", "N/A", "N/A")
+        data["persons"].append(admin_person.__dict__)
+        admin_user = User("admin", "admin", admin_role["role_id"], admin_person.person_id)
+        data["users"].append(admin_user.__dict__)
+        print("Default admin user created with username 'admin' and password 'admin'.")
 
     outside_welcome_page()
 
