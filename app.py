@@ -16,6 +16,15 @@ data = {
 
 id_incrementer = 0
 
+def display_table(data_list):
+    if not data_list:
+        print("No data available.")
+        return
+    if isinstance(data_list, dict):
+        data_list = [data_list]
+    df = pd.DataFrame(data_list)
+    print(df.to_string(index=False))
+
 def get_next_id():
     global id_incrementer
     id_incrementer += 1
@@ -174,8 +183,7 @@ def outside_welcome_page():
 
 def view_deals():
     print("\n------ Deals ------")
-    for deal in data["deals"]:
-        print(deal)
+    display_table(data["deals"])
     print("\n-------------------")
 
 def create_deal():
@@ -192,8 +200,7 @@ def create_deal():
 
 def view_contracts():
     print("\n------ Contracts ------")
-    for contract in data["contracts"]:
-        print(contract)
+    display_table(data["contracts"])
     print("\n-----------------------")
 
 def create_contract():
@@ -212,8 +219,7 @@ def create_contract():
 
 def view_entities(entity_name):
     print(f"\n------ {entity_name} ------")
-    for entity in data[entity_name]:
-        print(entity)
+    display_table(data[entity_name])
     print("----------------------------\n")
 
 def add_talent_manager():
@@ -237,7 +243,8 @@ def modify_talent_manager():
         print("Talent Manager not found.")
         return
 
-    print(f"Current data: {talent_manager}")
+    print("Current data:")
+    display_table(talent_manager)
     position = input("Enter new Position (leave blank to keep current): ") or talent_manager["position"]
     title = input("Enter new Title (leave blank to keep current): ") or talent_manager["title"]
     manager_id = input("Enter new Manager ID (leave blank to keep current): ") or talent_manager["manager_id"]
@@ -276,7 +283,8 @@ def modify_influencer():
         print("Influencer not found.")
         return
 
-    print(f"Current data: {influencer}")
+    print("Current data:")
+    display_table(influencer)
     description = input("Enter new Description (leave blank to keep current): ") or influencer["description"]
     talent_manager_id = input("Enter new Talent Manager ID (leave blank to keep current): ") or influencer["talent_manager_id"]
 
@@ -312,19 +320,14 @@ def home_page(user, role):
             if tm_record:
                 direct_reports = [i for i in data["influencers"] if i.get("talent_manager_id") == tm_record["talent_manager_id"]]
 
-        for i, report in enumerate(direct_reports, start=1):
-            print(f"{i}. {report}")
+        display_table(direct_reports)
         print("\n(Management for reports is handled on the Employees/Clients pages)")
 
     elif role_name in ["User", "Client", "Rep"]:
         print("\n--- Your Deals/Campaigns ---")
         # NOTE: The data model doesn't directly link a "User" to a "Deal".
         # This is a placeholder showing all deals. A real implementation would need a clear link.
-        deals = data["deals"]
-        if not deals:
-            print("No deals found.")
-        for i, deal in enumerate(deals, start=1):
-            print(f"{i}. {deal}")
+        display_table(data["deals"])
     else:
         print("No specific home page view for your role.")
 
@@ -345,8 +348,11 @@ def search_page(user, role):
         return
 
     print("\n--- Search Results ---")
+    display_results = []
     for i, (entity_type, item) in enumerate(results, start=1):
-        print(f"{i}. Type: {entity_type.replace('_', ' ').title()}, Data: {item}")
+        display_results.append({"Option": i, "Type": entity_type.replace('_', ' ').title(), "Data": str(item)})
+    
+    display_table(display_results)
 
     print(f"\n{len(results) + 1}. Return to Main Menu")
 
@@ -366,8 +372,7 @@ def search_page(user, role):
 
 def employees_page(user, role):
     print("--- All Employees (Talent Managers) ---")
-    for tm in data["talent_managers"]:
-        print(tm)
+    display_table(data["talent_managers"])
 
     while True:
         print("\nEmployee Menu:")
@@ -402,8 +407,7 @@ def clients_page(user, role):
     elif role_name in ["Manager", "Admin"]:
         influencers_to_show = data["influencers"]
 
-    for i in influencers_to_show:
-        print(i)
+    display_table(influencers_to_show)
 
     while True:
         print("\nClient Menu:")
