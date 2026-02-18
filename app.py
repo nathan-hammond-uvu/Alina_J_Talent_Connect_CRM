@@ -7,8 +7,8 @@ data = {
     "roles": [],
     "persons": [],
     "users": [],
-    "talent_managers": [],
-    "influencers": [],
+    "employees": [],
+    "clients": [],
     "social_media_accounts": [],
     "brands": [],
     "brand_representatives": [],
@@ -132,9 +132,9 @@ class User:
         self.person_id = person_id
 
 class Deal:
-    def __init__(self, influencer_id, brand_id, brand_rep_id, pitch_date, is_active, is_successful):
+    def __init__(self, client_id, brand_id, brand_rep_id, pitch_date, is_active, is_successful):
         self.deal_id = get_next_id()
-        self.influencer_id = influencer_id
+        self.client_id = client_id
         self.brand_id = brand_id
         self.brand_rep_id = brand_rep_id
         self.pitch_date = pitch_date
@@ -154,9 +154,9 @@ class Contract:
         self.status = status
         self.is_approved = is_approved
 
-class TalentManager:
-    def __init__(self, person_id, position, title, manager_id, start_date, end_date, is_active):
-        self.talent_manager_id = get_next_id()
+class Employee:
+    def __init__(self, person_id, position, title, manager_id, start_date, end_date, is_active, is_manager):
+        self.employee_id = get_next_id()
         self.person_id = person_id
         self.position = position
         self.title = title
@@ -164,17 +164,18 @@ class TalentManager:
         self.start_date = start_date
         self.end_date = end_date
         self.is_active = is_active
+        self.is_manager = is_manager
 
-class Influencer:
-    def __init__(self, talent_manager_id, description):
-        self.influencer_id = get_next_id()
-        self.talent_manager_id = talent_manager_id
+class Client:
+    def __init__(self, employee_id, description):
+        self.client_id = get_next_id()
+        self.employee_id = employee_id
         self.description = description
 
 class SocialMediaAccount:
-    def __init__(self, influencer_id, account_type, link):
+    def __init__(self, client_id, account_type, link):
         self.social_media_id = get_next_id()
-        self.influencer_id = influencer_id
+        self.client_id = client_id
         self.account_type = account_type
         self.link = link
 
@@ -261,8 +262,8 @@ def view_deals():
 
 def create_deal():
     print("--- Create New Deal ---")
-    influencer = select_item(data["influencers"], lambda x: f"{x['description']}", "Select Influencer")
-    if not influencer: return
+    client = select_item(data["clients"], lambda x: f"{x['description']}", "Select Client")
+    if not client: return
 
     brand = select_item(data["brands"], lambda x: str(x), "Select Brand")
     if not brand: return
@@ -270,12 +271,12 @@ def create_deal():
     brand_rep = select_item(data["brand_representatives"], lambda x: str(x), "Select Brand Representative")
     if not brand_rep: return
 
-    influencer_id, brand_id, brand_rep_id = influencer["influencer_id"], brand["brand_id"], brand_rep["brand_rep_id"]
+    client_id, brand_id, brand_rep_id = client["client_id"], brand["brand_id"], brand_rep["brand_rep_id"]
     pitch_date = input("Enter Pitch Date (YYYY-MM-DD): ")
     is_active = input("Is the deal active? (yes/no): ").lower() == "yes"
     is_successful = input("Is the deal successful? (yes/no): ").lower() == "yes"
 
-    new_deal = Deal(influencer_id, brand_id, brand_rep_id, pitch_date, is_active, is_successful)
+    new_deal = Deal(client_id, brand_id, brand_rep_id, pitch_date, is_active, is_successful)
     data["deals"].append(new_deal.__dict__)
     save_data()
     print(f"Deal {new_deal.deal_id} created successfully!")
@@ -309,56 +310,80 @@ def view_entities(entity_name):
     display_table(data[entity_name])
     print("----------------------------\n")
 
-def add_talent_manager():
-    print("--- Add Talent Manager ---")
-    # Filter persons who are not yet talent managers could be a nice touch, but listing all for now
-    person = select_item(data["persons"], lambda x: f"{x['full_name']} ({x['email']})", "Select Person to promote to Talent Manager")
+def add_employee():
+    print("--- Add Employee ---")
+    person = select_item(data["persons"], lambda x: f"{x['full_name']} ({x['email']})", "Select Person to promote to Employee")
     if not person: return
     person_id = person["person_id"]
 
     position = input("Enter Position: ")
     title = input("Enter Title: ")
     
-    manager = select_item(data["talent_managers"], lambda x: f"{get_person_name(x['person_id'])} - {x['title']}", "Select Reporting Manager (Optional)")
-    manager_id = manager["talent_manager_id"] if manager else 0
+    is_manager = input("Is this employee a Manager? (yes/no): ").lower() == "yes"
+    manager_id = 0
+
+    if not is_manager:
+        # If not a manager, ask if they want to add a manager
+        add_mgr = input("Would you like to assign a Manager to this employee? (yes/no): ").lower()
+        if add_mgr == "yes":
+            managers = [e for e in data["employees"] if e.get("is_manager")]
+            manager = select_item(managers, lambda x: f"{get_person_name(x['person_id'])} - {x['title']}", "Select Manager")
+            if manager:
+                manager_id = manager["employee_id"]
 
     start_date = input("Enter Start Date (YYYY-MM-DD): ")
     end_date = input("Enter End Date (YYYY-MM-DD or leave blank): ") or None
-    is_active = input("Is the Talent Manager active? (yes/no): ").lower() == "yes"
+    is_active = input("Is the Employee active? (yes/no): ").lower() == "yes"
 
-    new_talent_manager = TalentManager(person_id, position, title, manager_id, start_date, end_date, is_active)
-    data["talent_managers"].append(new_talent_manager.__dict__)
+    new_employee = Employee(person_id, position, title, manager_id, start_date, end_date, is_active, is_manager)
+    data["employees"].append(new_employee.__dict__)
     save_data()
-    print(f"Talent Manager {new_talent_manager.talent_manager_id} added successfully!")
+    print(f"Employee {new_employee.employee_id} added successfully!")
 
-def modify_talent_manager():
-    talent_manager = find_and_select_item(
-        data["talent_managers"], 
+    # If they are a manager, ask to add direct reports (assign existing employees)
+    if is_manager:
+        add_reports = input("Would you like to add direct reports (assign existing employees)? (yes/no): ").lower()
+        if add_reports == "yes":
+            while True:
+                # Filter employees who are not managers (or just anyone)
+                candidates = [e for e in data["employees"] if e["employee_id"] != new_employee.employee_id]
+                report = select_item(candidates, lambda x: f"{get_person_name(x['person_id'])} (Current Mgr ID: {x['manager_id']})", "Select Employee to assign (or cancel to finish)")
+                if not report:
+                    break
+                report["manager_id"] = new_employee.employee_id
+                print(f"Assigned {get_person_name(report['person_id'])} to {get_person_name(new_employee.person_id)}")
+            save_data()
+
+def modify_employee():
+    employee = find_and_select_item(
+        data["employees"], 
         lambda x: get_person_name(x["person_id"]), 
         lambda x: f"{get_person_name(x['person_id'])} - {x['title']}", 
-        "Talent Manager"
+        "Employee"
     )
-    if not talent_manager:
+    if not employee:
         return
 
     print("Current data:")
-    display_table(talent_manager)
-    position = input("Enter new Position (leave blank to keep current): ") or talent_manager["position"]
-    title = input("Enter new Title (leave blank to keep current): ") or talent_manager["title"]
-    start_date = input("Enter new Start Date (leave blank to keep current): ") or talent_manager["start_date"]
-    end_date = input("Enter new End Date (leave blank to keep current): ") or talent_manager["end_date"]
+    display_table(employee)
+    position = input("Enter new Position (leave blank to keep current): ") or employee["position"]
+    title = input("Enter new Title (leave blank to keep current): ") or employee["title"]
+    start_date = input("Enter new Start Date (leave blank to keep current): ") or employee["start_date"]
+    end_date = input("Enter new End Date (leave blank to keep current): ") or employee["end_date"]
     is_active = input("Is Active (leave blank to keep current, yes/no): ")
-    is_active = talent_manager["is_active"] if is_active == "" else is_active.lower() == "yes"
+    is_active = employee["is_active"] if is_active == "" else is_active.lower() == "yes"
 
     # Handle Manager ID change via selection
-    manager_id = talent_manager["manager_id"]
-    change_manager = input("Change Reporting Manager? (yes/no): ").lower()
-    if change_manager == "yes":
-        new_manager = select_item(data["talent_managers"], lambda x: f"{get_person_name(x['person_id'])}", "Select New Manager")
-        if new_manager:
-            manager_id = new_manager["talent_manager_id"]
+    manager_id = employee["manager_id"]
+    if not employee.get("is_manager"):
+        change_manager = input("Change Reporting Manager? (yes/no): ").lower()
+        if change_manager == "yes":
+            managers = [e for e in data["employees"] if e.get("is_manager")]
+            new_manager = select_item(managers, lambda x: f"{get_person_name(x['person_id'])}", "Select New Manager")
+            if new_manager:
+                manager_id = new_manager["employee_id"]
 
-    talent_manager.update({
+    employee.update({
         "position": position,
         "title": title,
         "manager_id": manager_id,
@@ -367,63 +392,63 @@ def modify_talent_manager():
         "is_active": is_active
     })
     save_data()
-    print("Talent Manager updated successfully!")
+    print("Employee updated successfully!")
 
-def delete_talent_manager():
-    talent_manager = find_and_select_item(
-        data["talent_managers"], 
+def delete_employee():
+    employee = find_and_select_item(
+        data["employees"], 
         lambda x: get_person_name(x["person_id"]), 
         lambda x: f"{get_person_name(x['person_id'])}", 
-        "Talent Manager"
+        "Employee"
     )
-    if not talent_manager: return
+    if not employee: return
 
-    data["talent_managers"] = [tm for tm in data["talent_managers"] if tm["talent_manager_id"] != talent_manager["talent_manager_id"]]
+    data["employees"] = [e for e in data["employees"] if e["employee_id"] != employee["employee_id"]]
     save_data()
-    print("Talent Manager deleted successfully!")
+    print("Employee deleted successfully!")
 
-def add_influencer():
-    print("--- Add Influencer ---")
-    tm = select_item(data["talent_managers"], lambda x: f"{get_person_name(x['person_id'])}", "Select Talent Manager for this Influencer")
-    if not tm: return
-    talent_manager_id = tm["talent_manager_id"]
+def add_client():
+    print("--- Add Client ---")
+    emp = select_item(data["employees"], lambda x: f"{get_person_name(x['person_id'])}", "Select Employee (Manager) for this Client")
+    if not emp: return
+    employee_id = emp["employee_id"]
 
-    description = input("Enter Influencer Description: ")
-    new_influencer = Influencer(talent_manager_id, description)
-    data["influencers"].append(new_influencer.__dict__)
+    description = input("Enter Client Description: ")
+    new_client = Client(employee_id, description)
+    data["clients"].append(new_client.__dict__)
     save_data()
-    print(f"Influencer {new_influencer.influencer_id} added successfully!")
+    print(f"Client {new_client.client_id} added successfully!")
 
-def modify_influencer():
-    influencer = find_and_select_item(data["influencers"], lambda x: x["description"], lambda x: x["description"], "Influencer")
-    if not influencer:
+def modify_client():
+    client = find_and_select_item(data["clients"], lambda x: x["description"], lambda x: x["description"], "Client")
+    if not client:
         return
 
     print("Current data:")
-    display_table(influencer)
-    description = input("Enter new Description (leave blank to keep current): ") or influencer["description"]
+    display_table(client)
+    description = input("Enter new Description (leave blank to keep current): ") or client["description"]
     
-    talent_manager_id = influencer["talent_manager_id"]
-    change_tm = input("Change Talent Manager? (yes/no): ").lower()
-    if change_tm == "yes":
-        tm = select_item(data["talent_managers"], lambda x: f"{get_person_name(x['person_id'])}", "Select New Talent Manager")
-        if tm:
-            talent_manager_id = tm["talent_manager_id"]
+    employee_id = client["employee_id"]
+    change_emp = input("Change Employee? (yes/no): ").lower()
+    if change_emp == "yes":
+        emp = select_item(data["employees"], lambda x: f"{get_person_name(x['person_id'])}", "Select New Employee")
+        if emp:
+            employee_id = emp["employee_id"]
 
-    influencer.update({
+    client.update({
         "description": description,
-        "talent_manager_id": int(talent_manager_id)
+        "employee_id": int(employee_id)
     })
     save_data()
-    print("Influencer updated successfully!")
+    print("Client updated successfully!")
 
-def delete_influencer():
-    influencer = find_and_select_item(data["influencers"], lambda x: x["description"], lambda x: x["description"], "Influencer")
-    if not influencer: return
+def delete_client():
+    client = find_and_select_item(data["clients"], lambda x: x["description"], lambda x: x["description"], "Client")
+    if not client: return
 
-    data["influencers"] = [i for i in data["influencers"] if i["influencer_id"] != influencer["influencer_id"]]
+    data["clients"] = [c for c in data["clients"] if c["client_id"] != client["client_id"]]
     save_data()
-    print("Influencer deleted successfully!")
+    print("Client deleted successfully!")
 
 def home_page(user, role):
     role_name = role["role_name"]
@@ -433,14 +458,17 @@ def home_page(user, role):
         print("\n--- Direct Reports ---")
         direct_reports = []
         if role_name == "Admin":
-            direct_reports = data["talent_managers"]
+            direct_reports = data["employees"]
         elif role_name == "Manager":
-            direct_reports = [tm for tm in data["talent_managers"] if tm.get("manager_id") == user["person_id"]]
+            # Find the employee record for this user
+            mgr_record = next((e for e in data["employees"] if e.get("person_id") == user["person_id"]), None)
+            if mgr_record:
+                direct_reports = [e for e in data["employees"] if e.get("manager_id") == mgr_record["employee_id"]]
         elif role_name == "Employee":
-            # Assuming an "Employee" is a Talent Manager, find their TM record to find their influencers
-            tm_record = next((tm for tm in data["talent_managers"] if tm.get("person_id") == user["person_id"]), None)
-            if tm_record:
-                direct_reports = [i for i in data["influencers"] if i.get("talent_manager_id") == tm_record["talent_manager_id"]]
+            # Find the employee record
+            emp_record = next((e for e in data["employees"] if e.get("person_id") == user["person_id"]), None)
+            if emp_record:
+                direct_reports = [c for c in data["clients"] if c.get("employee_id") == emp_record["employee_id"]]
 
         display_table(direct_reports)
         print("\n(Management for reports is handled on the Employees/Clients pages)")
@@ -493,8 +521,8 @@ def search_page(user, role):
             print("Please enter a number.")
 
 def employees_page(user, role):
-    print("--- All Employees (Talent Managers) ---")
-    display_table(data["talent_managers"])
+    print("--- All Employees ---")
+    display_table(data["employees"])
 
     while True:
         print("\nEmployee Menu:")
@@ -505,11 +533,11 @@ def employees_page(user, role):
         choice = input("Enter your choice: ")
 
         if choice == '1':
-            add_talent_manager()
+            add_employee()
         elif choice == '2':
-            modify_talent_manager()
+            modify_employee()
         elif choice == '3':
-            delete_talent_manager()
+            delete_employee()
         elif choice == '4':
             return
         else:
@@ -517,34 +545,34 @@ def employees_page(user, role):
 
 def clients_page(user, role):
     role_name = role["role_name"]
-    print("--- Clients (Influencers) ---")
+    print("--- Clients ---")
     
-    influencers_to_show = []
+    clients_to_show = []
     if role_name == "Employee":
-        talent_manager = next((tm for tm in data["talent_managers"] if tm["person_id"] == user["person_id"]), None)
-        if talent_manager:
-            influencers_to_show = [i for i in data["influencers"] if i["talent_manager_id"] == talent_manager["talent_manager_id"]]
+        employee = next((e for e in data["employees"] if e["person_id"] == user["person_id"]), None)
+        if employee:
+            clients_to_show = [c for c in data["clients"] if c["employee_id"] == employee["employee_id"]]
         else:
-            print("You are not registered as a Talent Manager.")
+            print("You are not registered as an Employee.")
     elif role_name in ["Manager", "Admin"]:
-        influencers_to_show = data["influencers"]
+        clients_to_show = data["clients"]
 
-    display_table(influencers_to_show)
+    display_table(clients_to_show)
 
     while True:
         print("\nClient Menu:")
-        print("1. Add New Client (Influencer)")
-        print("2. Modify Client (Influencer)")
-        print("3. Delete Client (Influencer)")
+        print("1. Add New Client")
+        print("2. Modify Client")
+        print("3. Delete Client")
         print("4. Return to Main Menu")
         choice = input("Enter your choice: ")
 
         if choice == '1':
-            add_influencer()
+            add_client()
         elif choice == '2':
-            modify_influencer()
+            modify_client()
         elif choice == '3':
-            delete_influencer()
+            delete_client()
         elif choice == '4':
             return
         else:

@@ -61,19 +61,20 @@
             "person_id": 7
         }
     ],
-    "talent_managers": [
+    "employees": [
         {
-            "talent_manager_id": 9,
+            "employee_id": 9,
             "person_id": 7,
             "position": "CEO",
             "title": "Alina",
             "manager_id": 0,
             "start_date": "2019-01-01",
             "end_date": null,
-            "is_active": true
+            "is_active": true,
+            "is_manager": true
         }
     ],
-    "influencers": [],
+    "clients": [],
     "social_media_accounts": [],
     "brands": [],
     "brand_representatives": [],
