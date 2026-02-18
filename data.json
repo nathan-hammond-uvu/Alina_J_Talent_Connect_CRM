@@ -1,8 +1,78 @@
 {
-    "roles": [],
-    "persons": [],
-    "users": [],
-    "talent_managers": [],
+    "roles": [
+        {
+            "role_id": 1,
+            "role_name": "User"
+        },
+        {
+            "role_id": 2,
+            "role_name": "Employee"
+        },
+        {
+            "role_id": 3,
+            "role_name": "Manager"
+        },
+        {
+            "role_id": 4,
+            "role_name": "Admin"
+        }
+    ],
+    "persons": [
+        {
+            "person_id": 5,
+            "first_name": "Admin",
+            "last_name": "User",
+            "full_name": "Admin User",
+            "display_name": "Admin",
+            "email": "admin@example.com",
+            "phone": "N/A",
+            "address": "N/A",
+            "city": "N/A",
+            "state": "N/A",
+            "zip": "N/A"
+        },
+        {
+            "person_id": 7,
+            "first_name": "Nathan",
+            "last_name": "Hammond",
+            "full_name": "Nathan Hammond",
+            "display_name": "Nate",
+            "email": "11094717@uvu.edu",
+            "phone": "999-999-9999",
+            "address": "street",
+            "city": "city",
+            "state": "UT",
+            "zip": "84061"
+        }
+    ],
+    "users": [
+        {
+            "user_id": 6,
+            "username": "admin",
+            "password": "admin",
+            "role_id": 4,
+            "person_id": 5
+        },
+        {
+            "user_id": 8,
+            "username": "darthnator",
+            "password": "AJTPassword#1",
+            "role_id": 1,
+            "person_id": 7
+        }
+    ],
+    "talent_managers": [
+        {
+            "talent_manager_id": 9,
+            "person_id": 7,
+            "position": "CEO",
+            "title": "Alina",
+            "manager_id": 0,
+            "start_date": "2019-01-01",
+            "end_date": null,
+            "is_active": true
+        }
+    ],
     "influencers": [],
     "social_media_accounts": [],
     "brands": [],
