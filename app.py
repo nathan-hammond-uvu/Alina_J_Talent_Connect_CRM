@@ -48,6 +48,7 @@ def load_data():
         except Exception as e:
             print(f"Error loading data: {e}")
     else:
+        print("No data file found. Creating new data.json with default boilerplate.")
         save_data()
 
 def display_table(data_list):
