@@ -1,5 +1,7 @@
 import pandas as pd
 import sys
+import json
+import os
 
 data = {
     "roles": [],
@@ -14,7 +16,39 @@ data = {
     "contracts": []
 }
 
+DATA_FILE = "data.json"
+
 id_incrementer = 0
+
+def save_data():
+    try:
+        with open(DATA_FILE, 'w') as f:
+            json.dump(data, f, indent=4)
+    except Exception as e:
+        print(f"Error saving data: {e}")
+
+def initialize_id_incrementer():
+    global id_incrementer
+    max_id = 0
+    for key in data:
+        for item in data[key]:
+            for k, v in item.items():
+                if k.endswith("_id") and isinstance(v, int):
+                    if v > max_id:
+                        max_id = v
+    id_incrementer = max_id
+
+def load_data():
+    global data
+    if os.path.exists(DATA_FILE):
+        try:
+            with open(DATA_FILE, 'r') as f:
+                data = json.load(f)
+            initialize_id_incrementer()
+        except Exception as e:
+            print(f"Error loading data: {e}")
+    else:
+        save_data()
 
 def display_table(data_list):
     if not data_list:
@@ -194,6 +228,7 @@ def register():
 
     user = User(username, password, role["role_id"], person.person_id)
     data["users"].append(user.__dict__)
+    save_data()
 
     print("Registration successful! Logging you in.")
     main_navigation_page(user.__dict__)
@@ -242,6 +277,7 @@ def create_deal():
 
     new_deal = Deal(influencer_id, brand_id, brand_rep_id, pitch_date, is_active, is_successful)
     data["deals"].append(new_deal.__dict__)
+    save_data()
     print(f"Deal {new_deal.deal_id} created successfully!")
 
 def view_contracts():
@@ -265,6 +301,7 @@ def create_contract():
 
     new_contract = Contract(deal_id, details, payment, agency_percentage, start_date, end_date, status, is_approved)
     data["contracts"].append(new_contract.__dict__)
+    save_data()
     print(f"Contract {new_contract.contract_id} created successfully!")
 
 def view_entities(entity_name):
@@ -291,6 +328,7 @@ def add_talent_manager():
 
     new_talent_manager = TalentManager(person_id, position, title, manager_id, start_date, end_date, is_active)
     data["talent_managers"].append(new_talent_manager.__dict__)
+    save_data()
     print(f"Talent Manager {new_talent_manager.talent_manager_id} added successfully!")
 
 def modify_talent_manager():
@@ -328,6 +366,7 @@ def modify_talent_manager():
         "end_date": end_date,
         "is_active": is_active
     })
+    save_data()
     print("Talent Manager updated successfully!")
 
 def delete_talent_manager():
@@ -340,6 +379,7 @@ def delete_talent_manager():
     if not talent_manager: return
 
     data["talent_managers"] = [tm for tm in data["talent_managers"] if tm["talent_manager_id"] != talent_manager["talent_manager_id"]]
+    save_data()
     print("Talent Manager deleted successfully!")
 
 def add_influencer():
@@ -351,6 +391,7 @@ def add_influencer():
     description = input("Enter Influencer Description: ")
     new_influencer = Influencer(talent_manager_id, description)
     data["influencers"].append(new_influencer.__dict__)
+    save_data()
     print(f"Influencer {new_influencer.influencer_id} added successfully!")
 
 def modify_influencer():
@@ -373,6 +414,7 @@ def modify_influencer():
         "description": description,
         "talent_manager_id": int(talent_manager_id)
     })
+    save_data()
     print("Influencer updated successfully!")
 
 def delete_influencer():
@@ -380,6 +422,7 @@ def delete_influencer():
     if not influencer: return
 
     data["influencers"] = [i for i in data["influencers"] if i["influencer_id"] != influencer["influencer_id"]]
+    save_data()
     print("Influencer deleted successfully!")
 
 def home_page(user, role):
@@ -582,20 +625,24 @@ def main_navigation_page(user):
             print("Invalid choice, please try again.")
 
 def main():
-    # Create sample data
-    roles = ["User", "Employee", "Manager", "Admin"]
-    for role_name in roles:
-        role_instance = Role(role_name)
-        data["roles"].append(role_instance.__dict__)
+    load_data()
 
-    # Create a default admin user
-    admin_role = next((r for r in data["roles"] if r["role_name"] == "Admin"), None)
-    if admin_role:
-        admin_person = Person("Admin", "User", "Admin User", "Admin", "admin@example.com", "N/A", "N/A", "N/A", "N/A", "N/A")
-        data["persons"].append(admin_person.__dict__)
-        admin_user = User("admin", "admin", admin_role["role_id"], admin_person.person_id)
-        data["users"].append(admin_user.__dict__)
-        print("Default admin user created with username 'admin' and password 'admin'.")
+    if not data["roles"]:
+        # Create sample data
+        roles = ["User", "Employee", "Manager", "Admin"]
+        for role_name in roles:
+            role_instance = Role(role_name)
+            data["roles"].append(role_instance.__dict__)
+
+        # Create a default admin user
+        admin_role = next((r for r in data["roles"] if r["role_name"] == "Admin"), None)
+        if admin_role:
+            admin_person = Person("Admin", "User", "Admin User", "Admin", "admin@example.com", "N/A", "N/A", "N/A", "N/A", "N/A")
+            data["persons"].append(admin_person.__dict__)
+            admin_user = User("admin", "admin", admin_role["role_id"], admin_person.person_id)
+            data["users"].append(admin_user.__dict__)
+            print("Default admin user created with username 'admin' and password 'admin'.")
+        save_data()
 
     outside_welcome_page()
 
