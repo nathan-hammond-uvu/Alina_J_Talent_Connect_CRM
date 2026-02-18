@@ -25,6 +25,44 @@ def display_table(data_list):
     df = pd.DataFrame(data_list)
     print(df.to_string(index=False))
 
+def get_person_name(person_id):
+    person = next((p for p in data["persons"] if p["person_id"] == person_id), None)
+    return person["full_name"] if person else "Unknown"
+
+def select_item(items, display_func, prompt_text="Select an item:"):
+    if not items:
+        print("No items available to select.")
+        return None
+    
+    print(f"\n{prompt_text}")
+    for i, item in enumerate(items, 1):
+        print(f"{i}. {display_func(item)}")
+    
+    while True:
+        try:
+            choice = input("Enter selection number (or press Enter to cancel): ")
+            if choice == "":
+                return None
+            choice = int(choice)
+            if 1 <= choice <= len(items):
+                return items[choice - 1]
+            print("Invalid selection.")
+        except ValueError:
+            print("Please enter a number.")
+
+def find_and_select_item(items, search_key_func, display_func, item_type_name):
+    search_term = input(f"Enter {item_type_name} name/description to search: ").lower()
+    matches = [item for item in items if search_term in search_key_func(item).lower()]
+    
+    if not matches:
+        print(f"No {item_type_name} found matching '{search_term}'.")
+        return None
+    
+    if len(matches) == 1:
+        return matches[0]
+    
+    return select_item(matches, display_func, f"Multiple matches found for {item_type_name}:")
+
 def get_next_id():
     global id_incrementer
     id_incrementer += 1
@@ -187,9 +225,17 @@ def view_deals():
     print("\n-------------------")
 
 def create_deal():
-    influencer_id = int(input("Enter Influencer ID: "))
-    brand_id = int(input("Enter Brand ID: "))
-    brand_rep_id = int(input("Enter Brand Representative ID: "))
+    print("--- Create New Deal ---")
+    influencer = select_item(data["influencers"], lambda x: f"{x['description']}", "Select Influencer")
+    if not influencer: return
+
+    brand = select_item(data["brands"], lambda x: str(x), "Select Brand")
+    if not brand: return
+
+    brand_rep = select_item(data["brand_representatives"], lambda x: str(x), "Select Brand Representative")
+    if not brand_rep: return
+
+    influencer_id, brand_id, brand_rep_id = influencer["influencer_id"], brand["brand_id"], brand_rep["brand_rep_id"]
     pitch_date = input("Enter Pitch Date (YYYY-MM-DD): ")
     is_active = input("Is the deal active? (yes/no): ").lower() == "yes"
     is_successful = input("Is the deal successful? (yes/no): ").lower() == "yes"
@@ -204,7 +250,11 @@ def view_contracts():
     print("\n-----------------------")
 
 def create_contract():
-    deal_id = int(input("Enter Deal ID: "))
+    print("--- Create New Contract ---")
+    # Helper to display deal info
+    deal = select_item(data["deals"], lambda x: f"Deal ID {x['deal_id']} (Date: {x['pitch_date']})", "Select Deal")
+    if not deal: return
+    deal_id = deal["deal_id"]
     details = input("Enter Contract Details: ")
     payment = float(input("Enter Payment Amount: "))
     agency_percentage = float(input("Enter Agency Percentage: "))
@@ -223,10 +273,18 @@ def view_entities(entity_name):
     print("----------------------------\n")
 
 def add_talent_manager():
-    person_id = int(input("Enter Person ID for the Talent Manager: "))
+    print("--- Add Talent Manager ---")
+    # Filter persons who are not yet talent managers could be a nice touch, but listing all for now
+    person = select_item(data["persons"], lambda x: f"{x['full_name']} ({x['email']})", "Select Person to promote to Talent Manager")
+    if not person: return
+    person_id = person["person_id"]
+
     position = input("Enter Position: ")
     title = input("Enter Title: ")
-    manager_id = int(input("Enter Manager ID (or 0 if none): "))
+    
+    manager = select_item(data["talent_managers"], lambda x: f"{get_person_name(x['person_id'])} - {x['title']}", "Select Reporting Manager (Optional)")
+    manager_id = manager["talent_manager_id"] if manager else 0
+
     start_date = input("Enter Start Date (YYYY-MM-DD): ")
     end_date = input("Enter End Date (YYYY-MM-DD or leave blank): ") or None
     is_active = input("Is the Talent Manager active? (yes/no): ").lower() == "yes"
@@ -236,22 +294,31 @@ def add_talent_manager():
     print(f"Talent Manager {new_talent_manager.talent_manager_id} added successfully!")
 
 def modify_talent_manager():
-    talent_manager_id = int(input("Enter Talent Manager ID to modify: "))
-    talent_manager = next((tm for tm in data["talent_managers"] if tm["talent_manager_id"] == talent_manager_id), None)
-
+    talent_manager = find_and_select_item(
+        data["talent_managers"], 
+        lambda x: get_person_name(x["person_id"]), 
+        lambda x: f"{get_person_name(x['person_id'])} - {x['title']}", 
+        "Talent Manager"
+    )
     if not talent_manager:
-        print("Talent Manager not found.")
         return
 
     print("Current data:")
     display_table(talent_manager)
     position = input("Enter new Position (leave blank to keep current): ") or talent_manager["position"]
     title = input("Enter new Title (leave blank to keep current): ") or talent_manager["title"]
-    manager_id = input("Enter new Manager ID (leave blank to keep current): ") or talent_manager["manager_id"]
     start_date = input("Enter new Start Date (leave blank to keep current): ") or talent_manager["start_date"]
     end_date = input("Enter new End Date (leave blank to keep current): ") or talent_manager["end_date"]
     is_active = input("Is Active (leave blank to keep current, yes/no): ")
     is_active = talent_manager["is_active"] if is_active == "" else is_active.lower() == "yes"
+
+    # Handle Manager ID change via selection
+    manager_id = talent_manager["manager_id"]
+    change_manager = input("Change Reporting Manager? (yes/no): ").lower()
+    if change_manager == "yes":
+        new_manager = select_item(data["talent_managers"], lambda x: f"{get_person_name(x['person_id'])}", "Select New Manager")
+        if new_manager:
+            manager_id = new_manager["talent_manager_id"]
 
     talent_manager.update({
         "position": position,
@@ -264,29 +331,43 @@ def modify_talent_manager():
     print("Talent Manager updated successfully!")
 
 def delete_talent_manager():
-    talent_manager_id = int(input("Enter Talent Manager ID to delete: "))
-    data["talent_managers"] = [tm for tm in data["talent_managers"] if tm["talent_manager_id"] != talent_manager_id]
+    talent_manager = find_and_select_item(
+        data["talent_managers"], 
+        lambda x: get_person_name(x["person_id"]), 
+        lambda x: f"{get_person_name(x['person_id'])}", 
+        "Talent Manager"
+    )
+    if not talent_manager: return
+
+    data["talent_managers"] = [tm for tm in data["talent_managers"] if tm["talent_manager_id"] != talent_manager["talent_manager_id"]]
     print("Talent Manager deleted successfully!")
 
 def add_influencer():
-    talent_manager_id = int(input("Enter Talent Manager ID: "))
+    print("--- Add Influencer ---")
+    tm = select_item(data["talent_managers"], lambda x: f"{get_person_name(x['person_id'])}", "Select Talent Manager for this Influencer")
+    if not tm: return
+    talent_manager_id = tm["talent_manager_id"]
+
     description = input("Enter Influencer Description: ")
     new_influencer = Influencer(talent_manager_id, description)
     data["influencers"].append(new_influencer.__dict__)
     print(f"Influencer {new_influencer.influencer_id} added successfully!")
 
 def modify_influencer():
-    influencer_id = int(input("Enter Influencer ID to modify: "))
-    influencer = next((i for i in data["influencers"] if i["influencer_id"] == influencer_id), None)
-
+    influencer = find_and_select_item(data["influencers"], lambda x: x["description"], lambda x: x["description"], "Influencer")
     if not influencer:
-        print("Influencer not found.")
         return
 
     print("Current data:")
     display_table(influencer)
     description = input("Enter new Description (leave blank to keep current): ") or influencer["description"]
-    talent_manager_id = input("Enter new Talent Manager ID (leave blank to keep current): ") or influencer["talent_manager_id"]
+    
+    talent_manager_id = influencer["talent_manager_id"]
+    change_tm = input("Change Talent Manager? (yes/no): ").lower()
+    if change_tm == "yes":
+        tm = select_item(data["talent_managers"], lambda x: f"{get_person_name(x['person_id'])}", "Select New Talent Manager")
+        if tm:
+            talent_manager_id = tm["talent_manager_id"]
 
     influencer.update({
         "description": description,
@@ -295,13 +376,11 @@ def modify_influencer():
     print("Influencer updated successfully!")
 
 def delete_influencer():
-    influencer_id = int(input("Enter Influencer ID to delete: "))
-    initial_len = len(data["influencers"])
-    data["influencers"] = [i for i in data["influencers"] if i["influencer_id"] != influencer_id]
-    if len(data["influencers"]) < initial_len:
-        print("Influencer deleted successfully!")
-    else:
-        print("Influencer not found.")
+    influencer = find_and_select_item(data["influencers"], lambda x: x["description"], lambda x: x["description"], "Influencer")
+    if not influencer: return
+
+    data["influencers"] = [i for i in data["influencers"] if i["influencer_id"] != influencer["influencer_id"]]
+    print("Influencer deleted successfully!")
 
 def home_page(user, role):
     role_name = role["role_name"]
