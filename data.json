@@ -49,7 +49,7 @@
         {
             "user_id": 6,
             "username": "admin",
-            "password": "admin",
+            "password": "scrypt:32768:8:1$ojG3lnlYoRgihsOp$4885dce85bad4d85685e67c85d094ef6c657502b17482cc24cbecfe111026b55186d252d8aae5f2eb0d7eb24328b51175f8181c5710ea2eff30787be9046100f",
             "role_id": 4,
             "person_id": 5
         },
