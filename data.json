@@ -56,7 +56,7 @@
         {
             "user_id": 8,
             "username": "darthnator",
-            "password": "AJTPassword#1",
+            "password": "scrypt:32768:8:1$3IgnloDf5mymvi1M$5ef6607d5596ccb5c5eeab9e2d099bf663833d3ba2053c31a1ac6e356819dd8ebf9fbaebc63b073cc74018e0f5a608724572237911898d6f1b4f66dc7bd501fa",
             "role_id": 1,
             "person_id": 7
         }
