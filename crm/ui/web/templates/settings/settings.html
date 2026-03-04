@@ -1,0 +1,96 @@
+{% extends "base_portal.html" %}
+{% set active_page = "settings" %}
+{% block title %}Settings – Talent Connect CRM{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1>&#9881;&#65039; Settings</h1>
+</div>
+
+<!-- Profile Settings -->
+<div class="card">
+  <h3>Profile Information</h3>
+  <form method="post" class="entity-form">
+    <input type="hidden" name="action" value="update_profile">
+    <div class="form-row">
+      <div class="form-group">
+        <label>First Name</label>
+        <input type="text" name="first_name" value="{{ person.first_name if person else '' }}" class="form-control">
+      </div>
+      <div class="form-group">
+        <label>Last Name</label>
+        <input type="text" name="last_name" value="{{ person.last_name if person else '' }}" class="form-control">
+      </div>
+      <div class="form-group">
+        <label>Full Name</label>
+        <input type="text" name="full_name" value="{{ person.full_name if person else '' }}" class="form-control">
+      </div>
+      <div class="form-group">
+        <label>Display Name</label>
+        <input type="text" name="display_name" value="{{ person.display_name if person else '' }}" class="form-control">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Email</label>
+        <input type="email" name="email" value="{{ person.email if person else '' }}" class="form-control">
+      </div>
+      <div class="form-group">
+        <label>Phone</label>
+        <input type="text" name="phone" value="{{ person.phone if person else '' }}" class="form-control">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Address</label>
+        <input type="text" name="address" value="{{ person.address if person else '' }}" class="form-control">
+      </div>
+      <div class="form-group">
+        <label>City</label>
+        <input type="text" name="city" value="{{ person.city if person else '' }}" class="form-control">
+      </div>
+      <div class="form-group">
+        <label>State</label>
+        <input type="text" name="state" value="{{ person.state if person else '' }}" class="form-control">
+      </div>
+      <div class="form-group">
+        <label>ZIP</label>
+        <input type="text" name="zip" value="{{ person.zip if person else '' }}" class="form-control">
+      </div>
+    </div>
+    <button type="submit" class="btn btn-primary">Save Profile</button>
+  </form>
+</div>
+
+<!-- Account Info -->
+<div class="card">
+  <h3>Account Info</h3>
+  <table class="data-table settings-table">
+    <tbody>
+      <tr><th>Username</th><td>{{ current_user.username }}</td></tr>
+      <tr><th>Role</th><td>{{ current_role }}</td></tr>
+      <tr><th>User ID</th><td>{{ current_user.user_id }}</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- Change Password -->
+<div class="card">
+  <h3>Change Password</h3>
+  <form method="post" class="entity-form">
+    <input type="hidden" name="action" value="change_password">
+    <div class="form-group">
+      <label>Current Password</label>
+      <input type="password" name="current_password" class="form-control" required>
+    </div>
+    <div class="form-group">
+      <label>New Password</label>
+      <input type="password" name="new_password" class="form-control" required minlength="6">
+    </div>
+    <div class="form-group">
+      <label>Confirm New Password</label>
+      <input type="password" name="confirm_password" class="form-control" required>
+    </div>
+    <button type="submit" class="btn btn-primary">Update Password</button>
+  </form>
+</div>
+{% endblock %}

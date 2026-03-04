@@ -1,0 +1,106 @@
+{% extends "base_portal.html" %}
+{% set active_page = "brands" %}
+{% block title %}Brands – Talent Connect CRM{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1>&#127881; Brands</h1>
+</div>
+
+{% if can_edit %}
+<div class="card">
+  <h3>Add Brand</h3>
+  <form method="post" action="{{ url_for('entity.brands_add') }}" class="entity-form">
+    <div class="form-row">
+      <div class="form-group">
+        <label>Name</label>
+        <input type="text" name="name" class="form-control" required>
+      </div>
+      <div class="form-group">
+        <label>Industry</label>
+        <input type="text" name="industry" class="form-control">
+      </div>
+      <div class="form-group">
+        <label>Website</label>
+        <input type="url" name="website" class="form-control">
+      </div>
+      <div class="form-group">
+        <label>Notes</label>
+        <input type="text" name="notes" class="form-control">
+      </div>
+    </div>
+    <button type="submit" class="btn btn-primary">Add Brand</button>
+  </form>
+</div>
+{% endif %}
+
+<div class="card">
+  <h3>Brands ({{ brands|length }})</h3>
+  {% if brands %}
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Name</th>
+        <th>Industry</th>
+        <th>Website</th>
+        <th>Notes</th>
+        {% if can_edit or can_delete %}<th>Actions</th>{% endif %}
+      </tr>
+    </thead>
+    <tbody>
+      {% for brand in brands %}
+      <tr id="row-brand-{{ brand.brand_id }}">
+        <td>{{ brand.brand_id }}</td>
+        <td>{{ brand.name or brand.get('brand_name', '—') }}</td>
+        <td>{{ brand.get('industry', '—') }}</td>
+        <td>{% if brand.get('website') %}<a href="{{ brand.website }}" target="_blank">{{ brand.website }}</a>{% else %}—{% endif %}</td>
+        <td>{{ brand.get('notes', '—') }}</td>
+        {% if can_edit or can_delete %}
+        <td class="action-cell">
+          {% if can_edit %}
+          <button class="btn btn-sm btn-secondary" onclick="toggleEdit('brand-{{ brand.brand_id }}')">Edit</button>
+          {% endif %}
+          {% if can_delete %}
+          <form method="post" action="{{ url_for('entity.brands_delete', brand_id=brand.brand_id) }}" style="display:inline" onsubmit="return confirm('Delete this brand?')">
+            <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+          </form>
+          {% endif %}
+        </td>
+        {% endif %}
+      </tr>
+      {% if can_edit %}
+      <tr id="edit-brand-{{ brand.brand_id }}" class="edit-row hidden">
+        <td colspan="6">
+          <form method="post" action="{{ url_for('entity.brands_edit', brand_id=brand.brand_id) }}" class="inline-edit-form">
+            <div class="form-row">
+              <div class="form-group">
+                <label>Name</label>
+                <input type="text" name="name" value="{{ brand.name or brand.get('brand_name', '') }}" class="form-control" required>
+              </div>
+              <div class="form-group">
+                <label>Industry</label>
+                <input type="text" name="industry" value="{{ brand.get('industry', '') }}" class="form-control">
+              </div>
+              <div class="form-group">
+                <label>Website</label>
+                <input type="url" name="website" value="{{ brand.get('website', '') }}" class="form-control">
+              </div>
+              <div class="form-group">
+                <label>Notes</label>
+                <input type="text" name="notes" value="{{ brand.get('notes', '') }}" class="form-control">
+              </div>
+            </div>
+            <button type="submit" class="btn btn-primary btn-sm">Save</button>
+            <button type="button" class="btn btn-secondary btn-sm" onclick="toggleEdit('brand-{{ brand.brand_id }}')">Cancel</button>
+          </form>
+        </td>
+      </tr>
+      {% endif %}
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="no-data">No brands found.</p>
+  {% endif %}
+</div>
+{% endblock %}

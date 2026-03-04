@@ -1,0 +1,155 @@
+{% extends "base_portal.html" %}
+{% set active_page = "contracts" %}
+{% block title %}Contracts – Talent Connect CRM{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1>&#128196; Contracts</h1>
+</div>
+
+{% if can_edit %}
+<div class="card">
+  <h3>Add Contract</h3>
+  <form method="post" action="{{ url_for('entity.contracts_add') }}" class="entity-form">
+    <div class="form-row">
+      <div class="form-group">
+        <label>Deal</label>
+        <select name="deal_id" class="form-control" required>
+          <option value="">-- Select Deal --</option>
+          {% for deal in deals %}
+          <option value="{{ deal.deal_id }}">Deal #{{ deal.deal_id }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Details</label>
+        <input type="text" name="details" class="form-control">
+      </div>
+      <div class="form-group">
+        <label>Payment ($)</label>
+        <input type="number" name="payment" step="0.01" class="form-control" min="0">
+      </div>
+      <div class="form-group">
+        <label>Agency % </label>
+        <input type="number" name="agency_percentage" step="0.01" class="form-control" min="0" max="100">
+      </div>
+      <div class="form-group">
+        <label>Start Date</label>
+        <input type="date" name="start_date" class="form-control">
+      </div>
+      <div class="form-group">
+        <label>End Date</label>
+        <input type="date" name="end_date" class="form-control">
+      </div>
+      <div class="form-group">
+        <label>Status</label>
+        <input type="text" name="status" class="form-control">
+      </div>
+    </div>
+    <div class="form-row">
+      <label class="checkbox-label"><input type="checkbox" name="is_approved"> Approved</label>
+    </div>
+    <button type="submit" class="btn btn-primary">Add Contract</button>
+  </form>
+</div>
+{% endif %}
+
+<div class="card">
+  <h3>Contracts ({{ contracts|length }})</h3>
+  {% if contracts %}
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Deal ID</th>
+        <th>Details</th>
+        <th>Payment</th>
+        <th>Agency %</th>
+        <th>Start Date</th>
+        <th>End Date</th>
+        <th>Status</th>
+        <th>Approved</th>
+        {% if can_edit or can_delete %}<th>Actions</th>{% endif %}
+      </tr>
+    </thead>
+    <tbody>
+      {% for contract in contracts %}
+      <tr id="row-contract-{{ contract.contract_id }}">
+        <td>{{ contract.contract_id }}</td>
+        <td>{{ contract.deal_id }}</td>
+        <td>{{ contract.details }}</td>
+        <td>${{ "%.2f"|format(contract.payment|float) }}</td>
+        <td>{{ contract.agency_percentage }}%</td>
+        <td>{{ contract.start_date }}</td>
+        <td>{{ contract.end_date }}</td>
+        <td>{{ contract.status }}</td>
+        <td>{{ "Yes" if contract.is_approved else "No" }}</td>
+        {% if can_edit or can_delete %}
+        <td class="action-cell">
+          {% if can_edit %}
+          <button class="btn btn-sm btn-secondary" onclick="toggleEdit('contract-{{ contract.contract_id }}')">Edit</button>
+          {% endif %}
+          {% if can_delete %}
+          <form method="post" action="{{ url_for('entity.contracts_delete', contract_id=contract.contract_id) }}" style="display:inline" onsubmit="return confirm('Delete this contract?')">
+            <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+          </form>
+          {% endif %}
+        </td>
+        {% endif %}
+      </tr>
+      {% if can_edit %}
+      <tr id="edit-contract-{{ contract.contract_id }}" class="edit-row hidden">
+        <td colspan="10">
+          <form method="post" action="{{ url_for('entity.contracts_edit', contract_id=contract.contract_id) }}" class="inline-edit-form">
+            <div class="form-row">
+              <div class="form-group">
+                <label>Deal</label>
+                <select name="deal_id" class="form-control">
+                  {% for deal in deals %}
+                  <option value="{{ deal.deal_id }}" {% if deal.deal_id == contract.deal_id %}selected{% endif %}>
+                    Deal #{{ deal.deal_id }}
+                  </option>
+                  {% endfor %}
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Details</label>
+                <input type="text" name="details" value="{{ contract.details }}" class="form-control">
+              </div>
+              <div class="form-group">
+                <label>Payment</label>
+                <input type="number" name="payment" step="0.01" value="{{ contract.payment }}" class="form-control">
+              </div>
+              <div class="form-group">
+                <label>Agency %</label>
+                <input type="number" name="agency_percentage" step="0.01" value="{{ contract.agency_percentage }}" class="form-control">
+              </div>
+              <div class="form-group">
+                <label>Start Date</label>
+                <input type="date" name="start_date" value="{{ contract.start_date }}" class="form-control">
+              </div>
+              <div class="form-group">
+                <label>End Date</label>
+                <input type="date" name="end_date" value="{{ contract.end_date }}" class="form-control">
+              </div>
+              <div class="form-group">
+                <label>Status</label>
+                <input type="text" name="status" value="{{ contract.status }}" class="form-control">
+              </div>
+            </div>
+            <div class="form-row">
+              <label class="checkbox-label"><input type="checkbox" name="is_approved" {% if contract.is_approved %}checked{% endif %}> Approved</label>
+            </div>
+            <button type="submit" class="btn btn-primary btn-sm">Save</button>
+            <button type="button" class="btn btn-secondary btn-sm" onclick="toggleEdit('contract-{{ contract.contract_id }}')">Cancel</button>
+          </form>
+        </td>
+      </tr>
+      {% endif %}
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="no-data">No contracts found.</p>
+  {% endif %}
+</div>
+{% endblock %}

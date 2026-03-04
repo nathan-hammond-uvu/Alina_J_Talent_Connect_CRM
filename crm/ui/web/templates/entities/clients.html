@@ -1,0 +1,99 @@
+{% extends "base_portal.html" %}
+{% set active_page = "clients" %}
+{% block title %}Clients – Talent Connect CRM{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1>&#128101; Clients</h1>
+</div>
+
+{% if can_edit %}
+<div class="card">
+  <h3>Add Client</h3>
+  <form method="post" action="{{ url_for('entity.clients_add') }}" class="entity-form">
+    <div class="form-row">
+      <div class="form-group">
+        <label>Employee</label>
+        <select name="employee_id" class="form-control" required>
+          <option value="">-- Select Employee --</option>
+          {% for emp in employees %}
+          <option value="{{ emp.employee_id }}">Employee #{{ emp.employee_id }} (Person {{ emp.person_id }})</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Description</label>
+        <input type="text" name="description" class="form-control">
+      </div>
+    </div>
+    <button type="submit" class="btn btn-primary">Add Client</button>
+  </form>
+</div>
+{% endif %}
+
+<div class="card">
+  <h3>Clients ({{ clients|length }})</h3>
+  {% if clients %}
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Employee ID</th>
+        <th>Employee Name</th>
+        <th>Description</th>
+        {% if can_edit or can_delete %}<th>Actions</th>{% endif %}
+      </tr>
+    </thead>
+    <tbody>
+      {% for client in clients %}
+      <tr id="row-client-{{ client.client_id }}">
+        <td>{{ client.client_id }}</td>
+        <td>{{ client.employee_id }}</td>
+        <td>{{ client.person.full_name or client.person.display_name or "—" }}</td>
+        <td>{{ client.description }}</td>
+        {% if can_edit or can_delete %}
+        <td class="action-cell">
+          {% if can_edit %}
+          <button class="btn btn-sm btn-secondary" onclick="toggleEdit('client-{{ client.client_id }}')">Edit</button>
+          {% endif %}
+          {% if can_delete %}
+          <form method="post" action="{{ url_for('entity.clients_delete', client_id=client.client_id) }}" style="display:inline" onsubmit="return confirm('Delete this client?')">
+            <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+          </form>
+          {% endif %}
+        </td>
+        {% endif %}
+      </tr>
+      {% if can_edit %}
+      <tr id="edit-client-{{ client.client_id }}" class="edit-row hidden">
+        <td colspan="5">
+          <form method="post" action="{{ url_for('entity.clients_edit', client_id=client.client_id) }}" class="inline-edit-form">
+            <div class="form-row">
+              <div class="form-group">
+                <label>Employee</label>
+                <select name="employee_id" class="form-control">
+                  {% for emp in employees %}
+                  <option value="{{ emp.employee_id }}" {% if emp.employee_id == client.employee_id %}selected{% endif %}>
+                    Employee #{{ emp.employee_id }}
+                  </option>
+                  {% endfor %}
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Description</label>
+                <input type="text" name="description" value="{{ client.description }}" class="form-control">
+              </div>
+            </div>
+            <button type="submit" class="btn btn-primary btn-sm">Save</button>
+            <button type="button" class="btn btn-secondary btn-sm" onclick="toggleEdit('client-{{ client.client_id }}')">Cancel</button>
+          </form>
+        </td>
+      </tr>
+      {% endif %}
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="no-data">No clients found.</p>
+  {% endif %}
+</div>
+{% endblock %}
