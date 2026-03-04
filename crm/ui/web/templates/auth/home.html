@@ -1,0 +1,12 @@
+{% extends "base_public.html" %}
+{% block title %}Welcome – Talent Connect CRM{% endblock %}
+{% block content %}
+<div class="home-hero">
+  <h1>&#127891; Talent Connect CRM</h1>
+  <p class="home-tagline">Manage talent, clients, brands, and deals – all in one place.</p>
+  <div class="home-actions">
+    <a href="{{ url_for('auth.login') }}" class="btn btn-primary btn-lg">Login</a>
+    <a href="{{ url_for('auth.register') }}" class="btn btn-secondary btn-lg">Register</a>
+  </div>
+</div>
+{% endblock %}

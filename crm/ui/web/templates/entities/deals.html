@@ -1,0 +1,140 @@
+{% extends "base_portal.html" %}
+{% set active_page = "deals" %}
+{% block title %}Deals – Talent Connect CRM{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1>&#129309; Deals</h1>
+</div>
+
+{% if can_edit %}
+<div class="card">
+  <h3>Add Deal</h3>
+  <form method="post" action="{{ url_for('entity.deals_add') }}" class="entity-form">
+    <div class="form-row">
+      <div class="form-group">
+        <label>Client</label>
+        <select name="client_id" class="form-control" required>
+          <option value="">-- Select Client --</option>
+          {% for client in clients %}
+          <option value="{{ client.client_id }}">Client #{{ client.client_id }}: {{ client.description or '' }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Brand</label>
+        <select name="brand_id" class="form-control" required>
+          <option value="">-- Select Brand --</option>
+          {% for brand in brands %}
+          <option value="{{ brand.brand_id }}">{{ brand.name or brand.get('brand_name', '') }} (#{{ brand.brand_id }})</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Brand Rep ID</label>
+        <input type="number" name="brand_rep_id" class="form-control" min="0">
+      </div>
+      <div class="form-group">
+        <label>Pitch Date</label>
+        <input type="date" name="pitch_date" class="form-control">
+      </div>
+    </div>
+    <div class="form-row">
+      <label class="checkbox-label"><input type="checkbox" name="is_active"> Active</label>
+      <label class="checkbox-label"><input type="checkbox" name="is_successful"> Successful</label>
+    </div>
+    <button type="submit" class="btn btn-primary">Add Deal</button>
+  </form>
+</div>
+{% endif %}
+
+<div class="card">
+  <h3>Deals ({{ deals|length }})</h3>
+  {% if deals %}
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Client ID</th>
+        <th>Brand ID</th>
+        <th>Brand Rep ID</th>
+        <th>Pitch Date</th>
+        <th>Active</th>
+        <th>Successful</th>
+        {% if can_edit or can_delete %}<th>Actions</th>{% endif %}
+      </tr>
+    </thead>
+    <tbody>
+      {% for deal in deals %}
+      <tr id="row-deal-{{ deal.deal_id }}">
+        <td>{{ deal.deal_id }}</td>
+        <td>{{ deal.client_id }}</td>
+        <td>{{ deal.brand_id }}</td>
+        <td>{{ deal.brand_rep_id }}</td>
+        <td>{{ deal.pitch_date }}</td>
+        <td>{{ "Yes" if deal.is_active else "No" }}</td>
+        <td>{{ "Yes" if deal.is_successful else "No" }}</td>
+        {% if can_edit or can_delete %}
+        <td class="action-cell">
+          {% if can_edit %}
+          <button class="btn btn-sm btn-secondary" onclick="toggleEdit('deal-{{ deal.deal_id }}')">Edit</button>
+          {% endif %}
+          {% if can_delete %}
+          <form method="post" action="{{ url_for('entity.deals_delete', deal_id=deal.deal_id) }}" style="display:inline" onsubmit="return confirm('Delete this deal?')">
+            <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+          </form>
+          {% endif %}
+        </td>
+        {% endif %}
+      </tr>
+      {% if can_edit %}
+      <tr id="edit-deal-{{ deal.deal_id }}" class="edit-row hidden">
+        <td colspan="8">
+          <form method="post" action="{{ url_for('entity.deals_edit', deal_id=deal.deal_id) }}" class="inline-edit-form">
+            <div class="form-row">
+              <div class="form-group">
+                <label>Client</label>
+                <select name="client_id" class="form-control">
+                  {% for client in clients %}
+                  <option value="{{ client.client_id }}" {% if client.client_id == deal.client_id %}selected{% endif %}>
+                    Client #{{ client.client_id }}
+                  </option>
+                  {% endfor %}
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Brand</label>
+                <select name="brand_id" class="form-control">
+                  {% for brand in brands %}
+                  <option value="{{ brand.brand_id }}" {% if brand.brand_id == deal.brand_id %}selected{% endif %}>
+                    {{ brand.name or brand.get('brand_name','') }} (#{{ brand.brand_id }})
+                  </option>
+                  {% endfor %}
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Brand Rep ID</label>
+                <input type="number" name="brand_rep_id" value="{{ deal.brand_rep_id }}" class="form-control">
+              </div>
+              <div class="form-group">
+                <label>Pitch Date</label>
+                <input type="date" name="pitch_date" value="{{ deal.pitch_date }}" class="form-control">
+              </div>
+            </div>
+            <div class="form-row">
+              <label class="checkbox-label"><input type="checkbox" name="is_active" {% if deal.is_active %}checked{% endif %}> Active</label>
+              <label class="checkbox-label"><input type="checkbox" name="is_successful" {% if deal.is_successful %}checked{% endif %}> Successful</label>
+            </div>
+            <button type="submit" class="btn btn-primary btn-sm">Save</button>
+            <button type="button" class="btn btn-secondary btn-sm" onclick="toggleEdit('deal-{{ deal.deal_id }}')">Cancel</button>
+          </form>
+        </td>
+      </tr>
+      {% endif %}
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="no-data">No deals found.</p>
+  {% endif %}
+</div>
+{% endblock %}

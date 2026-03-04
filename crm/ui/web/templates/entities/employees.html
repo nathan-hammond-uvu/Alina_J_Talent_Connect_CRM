@@ -1,0 +1,137 @@
+{% extends "base_portal.html" %}
+{% set active_page = "employees" %}
+{% block title %}Employees – Talent Connect CRM{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1>&#128100; Employees</h1>
+</div>
+
+{% if can_edit %}
+<div class="card">
+  <h3>Add Employee</h3>
+  <form method="post" action="{{ url_for('entity.employees_add') }}" class="entity-form">
+    <div class="form-row">
+      <div class="form-group">
+        <label>Person</label>
+        <select name="person_id" class="form-control" required>
+          <option value="">-- Select Person --</option>
+          {% for p in all_persons %}
+          <option value="{{ p.person_id }}">{{ p.full_name or p.display_name }} (ID: {{ p.person_id }})</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Position</label>
+        <input type="text" name="position" class="form-control">
+      </div>
+      <div class="form-group">
+        <label>Title</label>
+        <input type="text" name="title" class="form-control">
+      </div>
+      <div class="form-group">
+        <label>Manager ID</label>
+        <input type="number" name="manager_id" class="form-control" min="0">
+      </div>
+      <div class="form-group">
+        <label>Start Date</label>
+        <input type="date" name="start_date" class="form-control">
+      </div>
+      <div class="form-group">
+        <label>End Date</label>
+        <input type="date" name="end_date" class="form-control">
+      </div>
+    </div>
+    <div class="form-row">
+      <label class="checkbox-label"><input type="checkbox" name="is_active"> Active</label>
+      <label class="checkbox-label"><input type="checkbox" name="is_manager"> Manager</label>
+    </div>
+    <button type="submit" class="btn btn-primary">Add Employee</button>
+  </form>
+</div>
+{% endif %}
+
+<div class="card">
+  <h3>Employees ({{ employees|length }})</h3>
+  {% if employees %}
+  <table class="data-table" id="employees-table">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Name</th>
+        <th>Position</th>
+        <th>Title</th>
+        <th>Manager ID</th>
+        <th>Start Date</th>
+        <th>Active</th>
+        <th>Is Manager</th>
+        {% if can_edit or can_delete %}<th>Actions</th>{% endif %}
+      </tr>
+    </thead>
+    <tbody>
+      {% for emp in employees %}
+      <tr id="row-emp-{{ emp.employee_id }}">
+        <td>{{ emp.employee_id }}</td>
+        <td>{{ emp.person.full_name or emp.person.display_name or "Unknown" }}</td>
+        <td class="view-mode">{{ emp.position }}</td>
+        <td class="view-mode">{{ emp.title }}</td>
+        <td class="view-mode">{{ emp.manager_id }}</td>
+        <td class="view-mode">{{ emp.start_date }}</td>
+        <td>{{ "Yes" if emp.is_active else "No" }}</td>
+        <td>{{ "Yes" if emp.is_manager else "No" }}</td>
+        {% if can_edit or can_delete %}
+        <td class="action-cell">
+          {% if can_edit %}
+          <button class="btn btn-sm btn-secondary" onclick="toggleEdit('emp-{{ emp.employee_id }}')">Edit</button>
+          {% endif %}
+          {% if can_delete %}
+          <form method="post" action="{{ url_for('entity.employees_delete', emp_id=emp.employee_id) }}" style="display:inline" onsubmit="return confirm('Delete this employee?')">
+            <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+          </form>
+          {% endif %}
+        </td>
+        {% endif %}
+      </tr>
+      {% if can_edit %}
+      <tr id="edit-emp-{{ emp.employee_id }}" class="edit-row hidden">
+        <td colspan="9">
+          <form method="post" action="{{ url_for('entity.employees_edit', emp_id=emp.employee_id) }}" class="inline-edit-form">
+            <div class="form-row">
+              <div class="form-group">
+                <label>Position</label>
+                <input type="text" name="position" value="{{ emp.position }}" class="form-control">
+              </div>
+              <div class="form-group">
+                <label>Title</label>
+                <input type="text" name="title" value="{{ emp.title }}" class="form-control">
+              </div>
+              <div class="form-group">
+                <label>Manager ID</label>
+                <input type="number" name="manager_id" value="{{ emp.manager_id }}" class="form-control">
+              </div>
+              <div class="form-group">
+                <label>Start Date</label>
+                <input type="date" name="start_date" value="{{ emp.start_date }}" class="form-control">
+              </div>
+              <div class="form-group">
+                <label>End Date</label>
+                <input type="date" name="end_date" value="{{ emp.end_date or '' }}" class="form-control">
+              </div>
+            </div>
+            <div class="form-row">
+              <label class="checkbox-label"><input type="checkbox" name="is_active" {% if emp.is_active %}checked{% endif %}> Active</label>
+              <label class="checkbox-label"><input type="checkbox" name="is_manager" {% if emp.is_manager %}checked{% endif %}> Manager</label>
+            </div>
+            <button type="submit" class="btn btn-primary btn-sm">Save</button>
+            <button type="button" class="btn btn-secondary btn-sm" onclick="toggleEdit('emp-{{ emp.employee_id }}')">Cancel</button>
+          </form>
+        </td>
+      </tr>
+      {% endif %}
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="no-data">No employees found.</p>
+  {% endif %}
+</div>
+{% endblock %}

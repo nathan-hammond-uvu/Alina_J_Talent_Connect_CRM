@@ -1,0 +1,13 @@
+{% extends "base_portal.html" %}
+{% set active_page = page_title|lower %}
+{% block title %}{{ page_title }} – Talent Connect CRM{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1>{{ page_title }}</h1>
+</div>
+<div class="coming-soon-banner">
+  <span class="coming-soon-icon">&#9200;</span>
+  <h2>Coming Soon!</h2>
+  <p>The <strong>{{ page_title }}</strong> page is under development. Stay tuned!</p>
+</div>
+{% endblock %}

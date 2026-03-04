@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Portal – Talent Connect CRM{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body class="portal-body">
+  <div class="portal-layout">
+
+    <!-- Sidebar -->
+    <nav class="sidebar">
+      <div class="sidebar-brand">
+        <span class="brand-logo">&#127891;</span>
+        <span class="brand-name">Talent Connect</span>
+      </div>
+
+      <ul class="nav-list">
+        <li class="{% if active_page == 'home' %}active{% endif %}">
+          <a href="{{ url_for('portal.portal_home') }}">&#127968; Portal Home</a>
+        </li>
+        <li class="{% if active_page == 'search' %}active{% endif %}">
+          <a href="{{ url_for('portal.search') }}">&#128269; Search</a>
+        </li>
+      </ul>
+
+      <div class="nav-divider"></div>
+
+      <ul class="nav-list">
+        <li class="{% if active_page == 'employees' %}active{% endif %}">
+          <a href="{{ url_for('entity.employees') }}">&#128100; Employees</a>
+        </li>
+        <li class="{% if active_page == 'clients' %}active{% endif %}">
+          <a href="{{ url_for('entity.clients') }}">&#128101; Clients</a>
+        </li>
+        <li class="{% if active_page == 'brands' %}active{% endif %}">
+          <a href="{{ url_for('entity.brands') }}">&#127881; Brands</a>
+        </li>
+        <li class="{% if active_page == 'deals' %}active{% endif %}">
+          <a href="{{ url_for('entity.deals') }}">&#129309; Deals</a>
+        </li>
+        <li class="{% if active_page == 'contracts' %}active{% endif %}">
+          <a href="{{ url_for('entity.contracts') }}">&#128196; Contracts</a>
+        </li>
+      </ul>
+
+      <div class="nav-divider"></div>
+
+      <ul class="nav-list">
+        <li class="{% if active_page == 'performance' %}active{% endif %}">
+          <a href="{{ url_for('portal.performance') }}">&#128200; Performance</a>
+        </li>
+        <li class="{% if active_page == 'tasks' %}active{% endif %}">
+          <a href="{{ url_for('portal.tasks') }}">&#9989; Tasks</a>
+        </li>
+        <li class="{% if active_page == 'discover' %}active{% endif %}">
+          <a href="{{ url_for('portal.discover') }}">&#127758; Discover</a>
+        </li>
+        <li class="{% if active_page == 'settings' %}active{% endif %}">
+          <a href="{{ url_for('settings.settings') }}">&#9881;&#65039; Settings</a>
+        </li>
+      </ul>
+
+      <div class="nav-divider"></div>
+
+      <!-- Profile Strip -->
+      <div class="profile-strip">
+        <div class="profile-avatar">&#128100;</div>
+        <div class="profile-info">
+          <div class="profile-name">{{ display_name }}</div>
+          <div class="profile-role">{{ current_role }}</div>
+        </div>
+      </div>
+
+      <div class="sidebar-footer">
+        <form action="{{ url_for('auth.logout') }}" method="post">
+          <button type="submit" class="btn-logout">Logout</button>
+        </form>
+      </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% for category, message in messages %}
+          <div class="alert alert-{{ category }}">{{ message }}</div>
+        {% endfor %}
+      {% endwith %}
+      {% block content %}{% endblock %}
+    </main>
+
+  </div>
+  <script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>
