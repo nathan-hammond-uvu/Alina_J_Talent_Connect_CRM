@@ -62,4 +62,4 @@ def create_app(data_path: str | None = None) -> Flask:
 
 
 if __name__ == "__main__":
-    create_app().run(debug=True)
+    create_app().run(debug=os.environ.get("FLASK_DEBUG", "0") == "1")

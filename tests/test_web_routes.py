@@ -181,15 +181,17 @@ class TestPortalAuthenticated:
 
 
 class TestRBAC:
-    def test_low_privilege_user_gets_403_on_employees(self, client, tmp_path):
+    def test_low_privilege_user_gets_403_on_employees(self, client):
         """A 'User' role user cannot view the employees page."""
         c, _ = client
-        # Register a new (User-role) account and login with it
+        # Register a new (User-role) account – auto-logs in via register route
         c.post("/register", data={
             "first_name": "Low", "last_name": "Priv",
             "email": "", "phone": "",
             "username": "lowpriv_test", "password": "testpass",
-        })
+        }, follow_redirects=False)
+        # The session now belongs to the newly registered low-privilege user;
+        # confirm access is denied.
         resp = c.get("/portal/employees")
         assert resp.status_code == 403
 
