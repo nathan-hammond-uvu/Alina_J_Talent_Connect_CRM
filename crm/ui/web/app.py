@@ -8,9 +8,12 @@ sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent))
 from flask import Flask
 
 from crm.persistence.json_store import JsonDataStore
+from crm.persistence.migration import run_migration
 from crm.services.auth_service import AuthService
 from crm.services.employee_service import EmployeeService
-from crm.services.client_service import ClientService
+from crm.services.creator_service import CreatorService
+from crm.services.brand_contact_service import BrandContactService
+from crm.services.person_service import PersonService
 from crm.services.deal_service import DealService
 from crm.services.contract_service import ContractService
 from crm.policies.access_control import AccessPolicy
@@ -25,14 +28,21 @@ def create_app(data_path: str | None = None) -> Flask:
     )
     app.secret_key = os.environ.get("SECRET_KEY", "dev-secret-key-change-in-prod")
 
+    resolved_path = data_path or "data.json"
+
+    # Run schema migration once (no-op if already migrated)
+    run_migration(resolved_path)
+
     # Single shared store – mirrors the CLI's approach
-    store = JsonDataStore(data_path or "data.json")
+    store = JsonDataStore(resolved_path)
 
     # Attach services to app context so routes can reach them via current_app
     app.config["store"] = store
     app.config["auth_service"] = AuthService(store)
     app.config["employee_service"] = EmployeeService(store)
-    app.config["client_service"] = ClientService(store)
+    app.config["creator_service"] = CreatorService(store)
+    app.config["brand_contact_service"] = BrandContactService(store)
+    app.config["person_service"] = PersonService(store)
     app.config["deal_service"] = DealService(store)
     app.config["contract_service"] = ContractService(store)
     app.config["access_policy"] = AccessPolicy(store)

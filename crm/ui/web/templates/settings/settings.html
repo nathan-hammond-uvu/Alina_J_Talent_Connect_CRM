@@ -4,6 +4,7 @@
 {% block content %}
 <div class="page-header">
   <h1>&#9881;&#65039; Settings</h1>
+  <p class="page-subtitle">Manage your profile, security, and portal settings.</p>
 </div>
 
 <!-- Profile Settings -->
@@ -67,7 +68,7 @@
   <table class="data-table settings-table">
     <tbody>
       <tr><th>Username</th><td>{{ current_user.username }}</td></tr>
-      <tr><th>Role</th><td>{{ current_role }}</td></tr>
+      <tr><th>Role</th><td><span class="badge">{{ current_role }}</span></td></tr>
       <tr><th>User ID</th><td>{{ current_user.user_id }}</td></tr>
     </tbody>
   </table>
@@ -93,4 +94,101 @@
     <button type="submit" class="btn btn-primary">Update Password</button>
   </form>
 </div>
+
+<!-- Access Control Matrix -->
+<div class="card">
+  <h3>&#128274; Access Control</h3>
+  {% if can_edit_acm %}
+  <p class="card-description">Edit permissions for each role and entity combination. Admin permissions are always full access and cannot be changed.</p>
+  <form method="post" class="entity-form">
+    <input type="hidden" name="action" value="update_acm">
+    <div class="acm-table-wrapper">
+      <table class="data-table acm-table">
+        <thead>
+          <tr>
+            <th class="acm-role-col">Role</th>
+            <th class="acm-entity-col">Entity</th>
+            {% for action in acm_actions %}
+            <th class="acm-action-col">{{ action|capitalize }}</th>
+            {% endfor %}
+          </tr>
+        </thead>
+        <tbody>
+          {% for role in acm_roles %}
+          {% set role_acm = acm.get(role, {}) %}
+          {% for entity in acm_entities %}
+          {% set entity_acm = role_acm.get(entity, {}) %}
+          <tr class="acm-row {% if loop.first %}acm-role-first{% endif %}">
+            {% if loop.first %}
+            <td class="acm-role-cell" rowspan="{{ acm_entities|length }}">
+              <span class="acm-role-badge acm-role-{{ role|lower }}">{{ role }}</span>
+            </td>
+            {% endif %}
+            <td class="acm-entity-cell">{{ entity|replace("_", " ")|title }}</td>
+            {% for action in acm_actions %}
+            {% set is_admin = (role == "Admin") %}
+            {% set is_creator_write = (role == "Creator" and action != "read") %}
+            <td class="acm-checkbox-cell">
+              <input type="checkbox"
+                name="acm_{{ role }}_{{ entity }}_{{ action }}"
+                class="acm-checkbox"
+                {% if entity_acm.get(action) %}checked{% endif %}
+                {% if is_admin or is_creator_write %}disabled{% endif %}
+                title="{{ role }} – {{ entity }} – {{ action }}">
+            </td>
+            {% endfor %}
+          </tr>
+          {% endfor %}
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div class="acm-legend">
+      <span class="acm-note">&#8505; Admin permissions are fixed and always granted. Creators cannot write anything.</span>
+    </div>
+    <button type="submit" class="btn btn-primary">Save Access Control Matrix</button>
+  </form>
+  {% else %}
+  <p class="card-description">Access Control Matrix — your current role permissions are shown below. Only admins can edit this.</p>
+  <div class="acm-table-wrapper">
+    <table class="data-table acm-table">
+      <thead>
+        <tr>
+          <th class="acm-role-col">Role</th>
+          <th class="acm-entity-col">Entity</th>
+          {% for action in acm_actions %}
+          <th class="acm-action-col">{{ action|capitalize }}</th>
+          {% endfor %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for role in acm_roles %}
+        {% set role_acm = acm.get(role, {}) %}
+        {% for entity in acm_entities %}
+        {% set entity_acm = role_acm.get(entity, {}) %}
+        <tr class="acm-row {% if loop.first %}acm-role-first{% endif %}">
+          {% if loop.first %}
+          <td class="acm-role-cell" rowspan="{{ acm_entities|length }}">
+            <span class="acm-role-badge acm-role-{{ role|lower }}">{{ role }}</span>
+          </td>
+          {% endif %}
+          <td class="acm-entity-cell">{{ entity|replace("_", " ")|title }}</td>
+          {% for action in acm_actions %}
+          <td class="acm-checkbox-cell">
+            {% if entity_acm.get(action) %}
+            <span class="acm-tick">&#10003;</span>
+            {% else %}
+            <span class="acm-cross">&#8212;</span>
+            {% endif %}
+          </td>
+          {% endfor %}
+        </tr>
+        {% endfor %}
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+</div>
 {% endblock %}
+

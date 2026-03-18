@@ -1,8 +1,14 @@
 from flask import Blueprint, render_template, request, flash, redirect, url_for, current_app
 
 from crm.ui.web.routes.helpers import login_required, get_current_user, portal_context, get_person
+from crm.persistence.json_store import JsonDataStore
 
 settings_bp = Blueprint("settings", __name__, url_prefix="/portal")
+
+# Ordered role list for the ACM table
+_ACM_ROLES = ["Admin", "Manager", "Employee", "Creator", "User"]
+_ACM_ENTITIES = ["persons", "users", "employees", "creators", "brand_contacts", "brands", "deals", "contracts"]
+_ACM_ACTIONS = ["create", "read", "update", "delete"]
 
 
 @settings_bp.route("/settings", methods=["GET", "POST"])
@@ -12,6 +18,7 @@ def settings():
     ctx = portal_context(user)
     store = current_app.config["store"]
     auth_svc = current_app.config["auth_service"]
+    policy = current_app.config["access_policy"]
 
     if request.method == "POST":
         action = request.form.get("action", "")
@@ -56,8 +63,29 @@ def settings():
                 store.save(data)
                 flash("Password updated successfully.", "success")
 
+        elif action == "update_acm":
+            if not policy.can_edit_acm(user):
+                flash("Permission denied: only admins can edit the Access Control Matrix.", "danger")
+            else:
+                new_acm = {}
+                for role in _ACM_ROLES:
+                    new_acm[role] = {}
+                    for entity in _ACM_ENTITIES:
+                        new_acm[role][entity] = {}
+                        for act in _ACM_ACTIONS:
+                            field_name = f"acm_{role}_{entity}_{act}"
+                            new_acm[role][entity][act] = request.form.get(field_name) == "on"
+                policy.save_acm(new_acm)
+                flash("Access Control Matrix updated.", "success")
+
         return redirect(url_for("settings.settings"))
 
     person = get_person(user.get("person_id"))
     ctx["person"] = person
+    ctx["acm"] = policy.get_acm()
+    ctx["acm_roles"] = _ACM_ROLES
+    ctx["acm_entities"] = _ACM_ENTITIES
+    ctx["acm_actions"] = _ACM_ACTIONS
+    ctx["can_edit_acm"] = policy.can_edit_acm(user)
     return render_template("settings/settings.html", **ctx)
+

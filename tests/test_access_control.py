@@ -10,7 +10,7 @@ def _bootstrap_store(tmp_path: str) -> tuple[JsonDataStore, dict]:
     store = JsonDataStore(filepath)
     data = store.load()
 
-    for role_name in ["User", "Employee", "Manager", "Admin", "Client", "Rep"]:
+    for role_name in ["User", "Employee", "Manager", "Admin", "Creator", "Client", "Rep"]:
         rid = store.next_id(data)
         data["roles"].append({"role_id": rid, "role_name": role_name})
 
@@ -21,17 +21,21 @@ def _bootstrap_store(tmp_path: str) -> tuple[JsonDataStore, dict]:
          "display_name": "M1", "email": "m@e.com", "phone": "", "address": "", "city": "", "state": "", "zip": ""},
         {"person_id": 101, "first_name": "Emp", "last_name": "Two", "full_name": "Emp Two",
          "display_name": "E2", "email": "e@e.com", "phone": "", "address": "", "city": "", "state": "", "zip": ""},
+        {"person_id": 102, "first_name": "Other", "last_name": "Mgr", "full_name": "Other Mgr",
+         "display_name": "M2", "email": "m2@e.com", "phone": "", "address": "", "city": "", "state": "", "zip": ""},
     ]
     data["employees"] += [
         {"employee_id": 200, "person_id": 100, "position": "lead", "title": "Lead", "manager_id": 0,
          "start_date": "2020-01-01", "end_date": None, "is_active": True, "is_manager": True},
         {"employee_id": 201, "person_id": 101, "position": "dev", "title": "Dev", "manager_id": 200,
          "start_date": "2021-01-01", "end_date": None, "is_active": True, "is_manager": False},
+        {"employee_id": 202, "person_id": 102, "position": "lead2", "title": "Lead2", "manager_id": 0,
+         "start_date": "2021-01-01", "end_date": None, "is_active": True, "is_manager": True},
     ]
-    # Clients owned by employee 201
-    data["clients"] += [
-        {"client_id": 300, "employee_id": 201, "description": "Client A"},
-        {"client_id": 301, "employee_id": 200, "description": "Client B"},
+    # Creators owned by employees
+    data["creators"] += [
+        {"creator_id": 300, "person_id": 103, "employee_id": 201, "description": "Creator A"},
+        {"creator_id": 301, "person_id": 104, "employee_id": 200, "description": "Creator B"},
     ]
     store.save(data)
     return store, data
@@ -54,55 +58,121 @@ class TestAdminAccess:
     def test_can_view_all(self, setup):
         store, data, policy = setup
         user = _user("Admin", data)
-        for entity in ("employees", "clients", "deals", "contracts", "brands"):
+        for entity in ("employees", "creators", "brand_contacts", "deals", "contracts", "brands"):
             assert policy.can_view(entity, user) is True
 
     def test_can_edit_all(self, setup):
         store, data, policy = setup
         user = _user("Admin", data)
-        for entity in ("employees", "clients", "deals", "contracts"):
+        for entity in ("employees", "creators", "brand_contacts", "deals", "contracts"):
             assert policy.can_edit(entity, user) is True
 
     def test_can_delete_all(self, setup):
         store, data, policy = setup
         user = _user("Admin", data)
-        for entity in ("employees", "clients", "deals", "contracts"):
+        for entity in ("employees", "creators", "brand_contacts", "deals", "contracts"):
             assert policy.can_delete(entity, user) is True
+
+    def test_can_edit_acm(self, setup):
+        store, data, policy = setup
+        user = _user("Admin", data)
+        assert policy.can_edit_acm(user) is True
 
 
 class TestManagerAccess:
-    def test_can_view_employees_and_clients(self, setup):
+    def test_can_view_employees_and_creators(self, setup):
         store, data, policy = setup
         user = _user("Manager", data)
         assert policy.can_view("employees", user) is True
-        assert policy.can_view("clients", user) is True
+        assert policy.can_view("creators", user) is True
 
     def test_cannot_delete_employees(self, setup):
         store, data, policy = setup
         user = _user("Manager", data)
+        # managers can't delete employees per ACM default
         assert policy.can_delete("employees", user) is False
 
-    def test_can_delete_clients(self, setup):
+    def test_can_delete_creators(self, setup):
         store, data, policy = setup
         user = _user("Manager", data)
-        assert policy.can_delete("clients", user) is True
+        assert policy.can_delete("creators", user) is True
+
+    def test_cannot_update_other_manager(self, setup):
+        """Manager cannot update/delete another manager employee record."""
+        store, data, policy = setup
+        user = _user("Manager", data, person_id=100)
+        target_manager_emp = {"employee_id": 202, "person_id": 102, "is_manager": True}
+        assert policy.can_update("employees", user, target_manager_emp) is False
+
+    def test_can_update_own_manager_record(self, setup):
+        """Manager can edit their own employee record even though they are a manager."""
+        store, data, policy = setup
+        user = _user("Manager", data, person_id=100)
+        own_emp = {"employee_id": 200, "person_id": 100, "is_manager": True}
+        assert policy.can_update("employees", user, own_emp) is True
+
+    def test_can_update_non_manager_employee(self, setup):
+        store, data, policy = setup
+        user = _user("Manager", data, person_id=100)
+        target_emp = {"employee_id": 201, "person_id": 101, "is_manager": False}
+        assert policy.can_update("employees", user, target_emp) is True
+
+    def test_cannot_edit_acm(self, setup):
+        store, data, policy = setup
+        user = _user("Manager", data)
+        assert policy.can_edit_acm(user) is False
 
 
 class TestEmployeeAccess:
-    def test_can_view_own_clients_only(self, setup):
+    def test_can_view_own_creators_only(self, setup):
         store, data, policy = setup
         # Employee 201 owns person_id 101
         user = _user("Employee", data, person_id=101)
-        all_clients = data["clients"]
-        scoped = policy.scope_clients(user, all_clients)
+        all_creators = data["creators"]
+        scoped = policy.scope_creators(user, all_creators)
         assert all(c["employee_id"] == 201 for c in scoped)
         assert len(scoped) == 1
 
-    def test_cannot_delete_anything(self, setup):
+    def test_can_edit_brand_contacts(self, setup):
         store, data, policy = setup
         user = _user("Employee", data)
-        for entity in ("employees", "clients", "deals", "contracts"):
+        assert policy.can_edit("brand_contacts", user) is True
+
+    def test_cannot_edit_other_employees(self, setup):
+        store, data, policy = setup
+        user = _user("Employee", data)
+        assert policy.can_edit("employees", user) is False
+
+    def test_cannot_delete_employees(self, setup):
+        store, data, policy = setup
+        user = _user("Employee", data)
+        assert policy.can_delete("employees", user) is False
+
+    def test_cannot_edit_acm(self, setup):
+        store, data, policy = setup
+        user = _user("Employee", data)
+        assert policy.can_edit_acm(user) is False
+
+
+class TestCreatorAccess:
+    def test_creator_cannot_edit_anything(self, setup):
+        store, data, policy = setup
+        user = _user("Creator", data)
+        for entity in ("employees", "creators", "brand_contacts", "deals", "contracts"):
+            assert policy.can_edit(entity, user) is False
+            assert policy.can_create(entity, user) is False
+            assert policy.can_update(entity, user) is False
             assert policy.can_delete(entity, user) is False
+
+    def test_creator_can_read_creators(self, setup):
+        store, data, policy = setup
+        user = _user("Creator", data)
+        assert policy.can_view("creators", user) is True
+
+    def test_creator_cannot_edit_acm(self, setup):
+        store, data, policy = setup
+        user = _user("Creator", data)
+        assert policy.can_edit_acm(user) is False
 
 
 class TestUserAccess:
@@ -111,10 +181,22 @@ class TestUserAccess:
         user = _user("User", data)
         assert policy.can_view("deals", user) is True
         assert policy.can_view("employees", user) is False
-        assert policy.can_view("clients", user) is False
+        assert policy.can_view("creators", user) is False
 
     def test_cannot_edit_anything(self, setup):
         store, data, policy = setup
         user = _user("User", data)
-        for entity in ("employees", "clients", "deals", "contracts"):
+        for entity in ("employees", "creators", "deals", "contracts"):
             assert policy.can_edit(entity, user) is False
+
+
+class TestBackwardCompatAliases:
+    """Ensure backward-compat scope_clients still works as scope_creators."""
+
+    def test_scope_clients_alias(self, setup):
+        store, data, policy = setup
+        user = _user("Employee", data, person_id=101)
+        all_creators = data["creators"]
+        scoped_via_alias = policy.scope_clients(user, all_creators)
+        scoped_via_new = policy.scope_creators(user, all_creators)
+        assert scoped_via_alias == scoped_via_new

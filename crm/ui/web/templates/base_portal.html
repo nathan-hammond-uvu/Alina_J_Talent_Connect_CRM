@@ -28,14 +28,19 @@
       <div class="nav-divider"></div>
 
       <ul class="nav-list">
+        <li class="nav-group-label">Talent</li>
         <li class="{% if active_page == 'employees' %}active{% endif %}">
           <a href="{{ url_for('entity.employees') }}">&#128100; Employees</a>
         </li>
-        <li class="{% if active_page == 'clients' %}active{% endif %}">
-          <a href="{{ url_for('entity.clients') }}">&#128101; Clients</a>
+        <li class="{% if active_page == 'creators' %}active{% endif %}">
+          <a href="{{ url_for('entity.creators') }}">&#127775; Creators</a>
         </li>
+        <li class="nav-group-label">Deals</li>
         <li class="{% if active_page == 'brands' %}active{% endif %}">
           <a href="{{ url_for('entity.brands') }}">&#127881; Brands</a>
+        </li>
+        <li class="{% if active_page == 'brand_contacts' %}active{% endif %}">
+          <a href="{{ url_for('entity.brand_contacts') }}">&#128222; Brand Contacts</a>
         </li>
         <li class="{% if active_page == 'deals' %}active{% endif %}">
           <a href="{{ url_for('entity.deals') }}">&#129309; Deals</a>

@@ -3,7 +3,7 @@ import pytest
 
 from crm.persistence.json_store import JsonDataStore
 from crm.services.employee_service import EmployeeService
-from crm.services.client_service import ClientService
+from crm.services.creator_service import CreatorService
 from crm.services.deal_service import DealService
 from crm.services.contract_service import ContractService
 
@@ -61,40 +61,41 @@ class TestEmployeeService:
     def test_get_direct_reports(self, store):
         svc = EmployeeService(store)
         mgr = svc.add_employee(1, "Mgr", "Manager", 0, "2020-01-01", None, True, True)
-        rep1 = svc.add_employee(2, "Dev", "Developer", mgr["employee_id"], "2021-01-01", None, True, False)
-        rep2 = svc.add_employee(3, "Dev", "Designer", mgr["employee_id"], "2021-06-01", None, True, False)
+        svc.add_employee(2, "Dev", "Developer", mgr["employee_id"], "2021-01-01", None, True, False)
+        svc.add_employee(3, "Dev", "Designer", mgr["employee_id"], "2021-06-01", None, True, False)
         reports = svc.get_direct_reports(mgr["employee_id"])
         assert len(reports) == 2
 
 
-class TestClientService:
-    def test_add_client_creates_record(self, store):
-        svc = ClientService(store)
-        client = svc.add_client(employee_id=10, description="Influencer A")
-        assert client["employee_id"] == 10
-        assert client["description"] == "Influencer A"
-        assert "client_id" in client
+class TestCreatorService:
+    def test_add_creator_creates_record(self, store):
+        svc = CreatorService(store)
+        creator = svc.add_creator(person_id=5, employee_id=10, description="Influencer A")
+        assert creator["person_id"] == 5
+        assert creator["employee_id"] == 10
+        assert creator["description"] == "Influencer A"
+        assert "creator_id" in creator
 
-    def test_add_client_persisted(self, store):
-        svc = ClientService(store)
-        client = svc.add_client(10, "Influencer A")
+    def test_add_creator_persisted(self, store):
+        svc = CreatorService(store)
+        creator = svc.add_creator(person_id=5, employee_id=10, description="Influencer A")
         data = store.load()
-        assert any(c["client_id"] == client["client_id"] for c in data["clients"])
+        assert any(c["creator_id"] == creator["creator_id"] for c in data["creators"])
 
-    def test_get_clients_for_employee(self, store):
-        svc = ClientService(store)
-        svc.add_client(10, "Client A")
-        svc.add_client(10, "Client B")
-        svc.add_client(20, "Client C")
-        results = svc.get_clients_for_employee(10)
+    def test_get_creators_for_employee(self, store):
+        svc = CreatorService(store)
+        svc.add_creator(person_id=1, employee_id=10, description="Creator A")
+        svc.add_creator(person_id=2, employee_id=10, description="Creator B")
+        svc.add_creator(person_id=3, employee_id=20, description="Creator C")
+        results = svc.get_creators_for_employee(10)
         assert len(results) == 2
         assert all(c["employee_id"] == 10 for c in results)
 
-    def test_delete_client(self, store):
-        svc = ClientService(store)
-        client = svc.add_client(10, "Delete Me")
-        assert svc.delete_client(client["client_id"]) is True
-        assert svc.get_client(client["client_id"]) is None
+    def test_delete_creator(self, store):
+        svc = CreatorService(store)
+        creator = svc.add_creator(person_id=5, employee_id=10, description="Delete Me")
+        assert svc.delete_creator(creator["creator_id"]) is True
+        assert svc.get_creator(creator["creator_id"]) is None
 
 
 class TestDealService:

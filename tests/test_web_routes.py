@@ -130,10 +130,17 @@ class TestPortalAuthenticated:
         resp = c.get("/portal/employees")
         assert resp.status_code == 200
 
-    def test_clients_page_accessible(self, client):
+    def test_clients_page_redirects_to_creators(self, client):
+        """Legacy /portal/clients should redirect to /portal/creators."""
         c, _ = client
         _login(c)
         resp = c.get("/portal/clients")
+        assert resp.status_code in (301, 302)
+
+    def test_creators_page_accessible(self, client):
+        c, _ = client
+        _login(c)
+        resp = c.get("/portal/creators")
         assert resp.status_code == 200
 
     def test_brands_page_accessible(self, client):
