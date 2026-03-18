@@ -102,14 +102,20 @@ class EmployeeRepository(Repository):
         return self.get_by_id(self.ID_FIELD, employee_id)
 
 
-class ClientRepository(Repository):
-    ID_FIELD = "client_id"
+
+
+class CreatorRepository(Repository):
+    ID_FIELD = "creator_id"
 
     def __init__(self, store: JsonDataStore):
-        super().__init__(store, "clients")
+        super().__init__(store, "creators")
 
-    def get(self, client_id: int) -> dict | None:
-        return self.get_by_id(self.ID_FIELD, client_id)
+    def get(self, creator_id: int) -> dict | None:
+        return self.get_by_id(self.ID_FIELD, creator_id)
+
+
+# Legacy alias
+ClientRepository = CreatorRepository
 
 
 class BrandRepository(Repository):
@@ -122,14 +128,18 @@ class BrandRepository(Repository):
         return self.get_by_id(self.ID_FIELD, brand_id)
 
 
-class BrandRepRepository(Repository):
-    ID_FIELD = "brand_rep_id"
+class BrandContactRepository(Repository):
+    ID_FIELD = "brand_contact_id"
 
     def __init__(self, store: JsonDataStore):
-        super().__init__(store, "brand_representatives")
+        super().__init__(store, "brand_contacts")
 
-    def get(self, brand_rep_id: int) -> dict | None:
-        return self.get_by_id(self.ID_FIELD, brand_rep_id)
+    def get(self, brand_contact_id: int) -> dict | None:
+        return self.get_by_id(self.ID_FIELD, brand_contact_id)
+
+
+# Legacy alias
+BrandRepRepository = BrandContactRepository
 
 
 class DealRepository(Repository):

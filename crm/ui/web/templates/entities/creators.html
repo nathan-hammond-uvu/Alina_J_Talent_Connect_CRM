@@ -1,0 +1,178 @@
+{% extends "base_portal.html" %}
+{% set active_page = "creators" %}
+{% block title %}Creators – Talent Connect CRM{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1>&#127775; Creators</h1>
+  <p class="page-subtitle">Manage creators and their talent relationships.</p>
+</div>
+
+{% if can_edit %}
+<div class="card">
+  <h3>Add Creator</h3>
+  <form method="post" action="{{ url_for('entity.creators_add') }}" class="entity-form">
+
+    <!-- Person assignment -->
+    <div class="person-assignment">
+      <div class="person-mode-toggle">
+        <label class="radio-label">
+          <input type="radio" name="person_mode" value="existing" id="mode_existing" onchange="togglePersonMode(this)">
+          Link to existing Person
+        </label>
+        <label class="radio-label">
+          <input type="radio" name="person_mode" value="new" id="mode_new" checked onchange="togglePersonMode(this)">
+          Create new Person
+        </label>
+      </div>
+
+      <div id="existing_person_section" class="person-section" style="display:none">
+        <div class="form-group">
+          <label>Existing Person</label>
+          <select name="person_id" class="form-control">
+            <option value="">-- Select Person --</option>
+            {% for p in all_persons %}
+            <option value="{{ p.person_id }}">{{ p.full_name or p.display_name }} (ID: {{ p.person_id }})</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+
+      <div id="new_person_section" class="person-section">
+        <div class="form-row">
+          <div class="form-group">
+            <label>First Name <span class="required">*</span></label>
+            <input type="text" name="first_name" class="form-control" placeholder="First name">
+          </div>
+          <div class="form-group">
+            <label>Last Name <span class="required">*</span></label>
+            <input type="text" name="last_name" class="form-control" placeholder="Last name">
+          </div>
+          <div class="form-group">
+            <label>Display Name</label>
+            <input type="text" name="display_name" class="form-control" placeholder="Display / stage name">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Email</label>
+            <input type="email" name="email" class="form-control" placeholder="email@example.com">
+          </div>
+          <div class="form-group">
+            <label>Phone</label>
+            <input type="text" name="phone" class="form-control" placeholder="555-555-5555">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label>Assigned Employee</label>
+        <select name="employee_id" class="form-control">
+          <option value="">-- Select Employee --</option>
+          {% for emp in employees %}
+          <option value="{{ emp.employee_id }}">
+            {%- set ep = all_persons | selectattr('person_id', 'equalto', emp.person_id) | list -%}
+            {%- if ep %}{{ ep[0].full_name or ep[0].display_name }} (ID: {{ emp.employee_id }}){% else %}Employee #{{ emp.employee_id }}{% endif -%}
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Description / Notes</label>
+        <input type="text" name="description" class="form-control" placeholder="Notes about this creator…">
+      </div>
+    </div>
+    <button type="submit" class="btn btn-primary">Add Creator</button>
+  </form>
+</div>
+{% endif %}
+
+<div class="card">
+  <h3>Creators ({{ creators|length }})</h3>
+  {% if creators %}
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Creator Name</th>
+        <th>Email</th>
+        <th>Assigned Employee</th>
+        <th>Description</th>
+        {% if can_edit or can_delete %}<th>Actions</th>{% endif %}
+      </tr>
+    </thead>
+    <tbody>
+      {% for creator in creators %}
+      <tr id="row-creator-{{ creator.creator_id }}">
+        <td>{{ creator.creator_id }}</td>
+        <td>{{ creator.person.full_name or creator.person.display_name or "—" }}</td>
+        <td>{{ creator.person.email or "—" }}</td>
+        <td>{{ creator.employee_person.full_name or creator.employee_person.display_name or ("Emp #" ~ creator.employee_id if creator.employee_id else "—") }}</td>
+        <td>{{ creator.description or "—" }}</td>
+        {% if can_edit or can_delete %}
+        <td class="action-cell">
+          {% if can_edit %}
+          <button class="btn btn-sm btn-secondary" onclick="toggleEdit('creator-{{ creator.creator_id }}')">Edit</button>
+          {% endif %}
+          {% if can_delete %}
+          <form method="post" action="{{ url_for('entity.creators_delete', creator_id=creator.creator_id) }}" style="display:inline" onsubmit="return confirm('Delete this creator?')">
+            <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+          </form>
+          {% endif %}
+        </td>
+        {% endif %}
+      </tr>
+      {% if can_edit %}
+      <tr id="edit-creator-{{ creator.creator_id }}" class="edit-row hidden">
+        <td colspan="6">
+          <form method="post" action="{{ url_for('entity.creators_edit', creator_id=creator.creator_id) }}" class="inline-edit-form">
+            <div class="form-row">
+              <div class="form-group">
+                <label>Assigned Employee</label>
+                <select name="employee_id" class="form-control">
+                  {% for emp in employees %}
+                  <option value="{{ emp.employee_id }}" {% if emp.employee_id == creator.employee_id %}selected{% endif %}>
+                    {%- set ep = all_persons | selectattr('person_id', 'equalto', emp.person_id) | list -%}
+                    {%- if ep %}{{ ep[0].full_name or ep[0].display_name }} (ID: {{ emp.employee_id }}){% else %}Employee #{{ emp.employee_id }}{% endif -%}
+                  </option>
+                  {% endfor %}
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Description</label>
+                <input type="text" name="description" value="{{ creator.description }}" class="form-control">
+              </div>
+            </div>
+            <button type="submit" class="btn btn-primary btn-sm">Save</button>
+            <button type="button" class="btn btn-secondary btn-sm" onclick="toggleEdit('creator-{{ creator.creator_id }}')">Cancel</button>
+          </form>
+        </td>
+      </tr>
+      {% endif %}
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div class="empty-state">
+    <span class="empty-icon">&#127775;</span>
+    <p class="empty-title">No creators found yet.</p>
+    <p class="empty-sub">{% if can_edit %}Add your first creator above.{% else %}No creators have been added.{% endif %}</p>
+  </div>
+  {% endif %}
+</div>
+
+<script>
+function togglePersonMode(radio) {
+  const existingSection = document.getElementById('existing_person_section');
+  const newSection = document.getElementById('new_person_section');
+  if (radio.value === 'existing') {
+    existingSection.style.display = 'block';
+    newSection.style.display = 'none';
+  } else {
+    existingSection.style.display = 'none';
+    newSection.style.display = 'block';
+  }
+}
+</script>
+{% endblock %}

@@ -47,17 +47,36 @@ def search():
                         "id": emp["employee_id"],
                     })
 
-        # Clients
-        if policy.can_view("clients", user):
-            all_clients = data.get("clients", [])
-            scoped = policy.scope_clients(user, all_clients)
-            for client in scoped:
-                if _matches(client):
+        # Creators (formerly Clients)
+        if policy.can_view("creators", user):
+            all_creators = data.get("creators", [])
+            scoped = policy.scope_creators(user, all_creators)
+            persons = {p["person_id"]: p for p in data.get("persons", [])}
+            for creator in scoped:
+                person = persons.get(creator.get("person_id"), {})
+                combined = {**creator, **{f"person_{k}": v for k, v in person.items()}}
+                if _matches(combined):
+                    label = person.get("full_name") or person.get("display_name") or creator.get("description") or f"Creator #{creator['creator_id']}"
                     results.append({
-                        "type": "Client",
-                        "label": client.get("description") or f"Client #{client['client_id']}",
-                        "url": f"/portal/clients#{client['client_id']}",
-                        "id": client["client_id"],
+                        "type": "Creator",
+                        "label": label,
+                        "url": f"/portal/creators#{creator['creator_id']}",
+                        "id": creator["creator_id"],
+                    })
+
+        # Brand Contacts
+        if policy.can_view("brand_contacts", user):
+            bc_persons = {p["person_id"]: p for p in data.get("persons", [])}
+            for contact in data.get("brand_contacts", []):
+                person = bc_persons.get(contact.get("person_id"), {})
+                combined = {**contact, **{f"person_{k}": v for k, v in person.items()}}
+                if _matches(combined):
+                    label = person.get("full_name") or person.get("display_name") or f"Brand Contact #{contact['brand_contact_id']}"
+                    results.append({
+                        "type": "Brand Contact",
+                        "label": label,
+                        "url": f"/portal/brand_contacts#{contact['brand_contact_id']}",
+                        "id": contact["brand_contact_id"],
                     })
 
         # Brands
