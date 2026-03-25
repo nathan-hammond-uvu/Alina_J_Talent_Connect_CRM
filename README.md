@@ -1,179 +1,219 @@
-# Alina J Talent Connect (CRM)
+# Alina J Talent Connect CRM
 
-## Overview
+A Python CRM application for managing people, creators, brands, deals, and contracts.
 
-**Alina J Talent Connect** is a custom Customer Relationship Management (CRM) system designed for an influencer marketing agency. The platform centralizes operational data, streamlines workflows, and improves visibility across talent, contracts, campaigns, and brand partnerships. It is intended to serve as a single source of truth that supports scalability and data-driven decision-making.
+The project includes:
+- A CLI app entry point.
+- A Flask web portal with authentication and role-based access control.
+- Multiple storage backends with a seamless switch model:
+  - JSON file backend (default)
+  - SQLite backend
+  - PostgreSQL backend
+- An Admin-only database dashboard for operational visibility and import actions.
 
-## Objectives
+## Tech Stack
 
-- Centralize talent, brand, and contract data
-- Streamline influencer and brand relationship workflows
-- Improve operational visibility and reporting
-- Enable performance tracking and KPI-driven insights
-- Support future AI- and API-driven enhancements
+- Python 3.11+
+- Flask
+- SQLAlchemy (SQLite backend)
+- psycopg v3 (PostgreSQL backend)
+- pytest
 
-## Core Features
+## Project Highlights
 
-### Data Management
+- CRUD services for roles, persons, users, employees, creators, social media accounts, brands, brand contacts, deals, and contracts.
+- Role-based permissions via an access control matrix.
+- Password hashing for stored user passwords.
+- Storage backend selection through environment variables.
+- Idempotent JSON-to-database import flow.
+- Admin DB dashboard with:
+  - backend/status visibility
+  - table counts
+  - table explorer with pagination
+  - import action
+  - admin password reset tool
 
-The system provides full CRUD (Create, Read, Update, Delete) capabilities for the following entities:
+## Quick Start
 
-- Roles
-- Persons
-- Users
-- Talent Managers
-- Influencers
-- Social Media Accounts
-- Brands
-- Brand Representatives
-- Deals / Campaigns
-- Contracts
+### 1. Create and activate a virtual environment
 
-### User Access & Security
+Windows PowerShell:
 
-- Role-based user accounts for:
-  - Guests / site visitors
-  - Employees
-  - Clients
-- Granular permission levels to control data access and actions
-- Encrypted password storage
+```powershell
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+```
 
-### Dashboards & Analytics
+### 2. Install dependencies
 
-- Customizable dashboards
-- KPI tracking and performance measurement
-- Sales forecasting and trend analysis
+```powershell
+pip install -r requirements.txt
+```
 
-### Navigation & Usability
+### 3. Run the web app (default JSON backend)
 
-- Seamless navigation across pages and modules
-- Nested tabs and contextual hyperlinks for quick access to related records
+```powershell
+python -m flask --app crm.ui.web.app:create_app run --debug
+```
 
-### Relationship Tracking
+Then open:
 
-- Centralized logging of interactions across channels (email, phone, social media)
-- 360-degree view of influencers, brands, and partnerships
+- http://127.0.0.1:5000/
 
-## Data Model
+## Storage Backends
 
-### Roles
+Backend selection is controlled by environment variables in the Flask app factory.
 
-| Field | Type | Description |
-|------|------|-------------|
-| Role_ID (PK) | Int | Unique user identifier |
-| Role_name | String | Name of the role |
+### Environment Variables
 
-### Persons
+- `CRM_STORAGE_BACKEND`: `json` (default), `sqlite`, or `postgres`
+- `DATABASE_URL`: required for postgres, optional for sqlite
+- `CRM_AUTO_IMPORT`: set to `1` to auto-import from `data.json` at startup for db backends
+- `SECRET_KEY`: Flask session secret (set a strong value outside local dev)
+- `FLASK_DEBUG`: set to `1` for debug mode when running via `python crm/ui/web/app.py`
 
-| Field | Type | Description |
-|------|------|-------------|
-| Person_ID (PK) | Int | Unique person identifier |
-| First_Name | String | First name |
-| Last_Name | String | Last name |
-| Full_Name | String | Full legal name |
-| Display_Name | String | Preferred display name |
-| Email | String | Work email address |
-| Phone | String | Work phone number (XXX-XXX-XXXX) |
-| Address | String | Street address |
-| City | String | City |
-| State | String | State |
-| Zip | String | ZIP code |
+### JSON Backend (default)
 
-### Users
+No extra configuration required:
 
-| Field | Type | Description |
-|------|------|-------------|
-| User_ID (PK) | Int | Unique user identifier |
-| Username | String | Login username |
-| Password | String (encrypted) | Login password |
-| Role_ID | Int | Associated role identifier |
-| Person_ID | Int | Associated person record |
+```powershell
+$env:CRM_STORAGE_BACKEND="json"
+python -m flask --app crm.ui.web.app:create_app run --debug
+```
 
-### Talent Managers
+### SQLite Backend
 
-| Field | Type | Description |
-|------|------|-------------|
-| Talent_Manager_ID (PK) | Int | Unique talent manager identifier |
-| Person_ID (FK) | Int | Reference to Persons |
-| Position | String | Organizational position |
-| Title | String | Job title |
-| Manager_ID (FK) | Int | Reporting manager (Person) |
-| Start_Date | Date | Hire date |
-| End_Date | Date | Termination date (if applicable) |
-| Is_Active | Boolean | Active employment status |
+Option A: let the app auto-create/use `project.db`:
 
-### Influencers
+```powershell
+$env:CRM_STORAGE_BACKEND="sqlite"
+Remove-Item Env:DATABASE_URL -ErrorAction SilentlyContinue
+python -m flask --app crm.ui.web.app:create_app run --debug
+```
 
-| Field | Type | Description |
-|------|------|-------------|
-| Influencer_ID (PK) | Int | Unique influencer identifier |
-| Talent_Manager_ID (FK) | Int | Associated talent manager |
-| Description | String | Influencer profile description |
+Option B: specify a custom SQLite database file:
 
-### Social Media Accounts
+```powershell
+$env:CRM_STORAGE_BACKEND="sqlite"
+$env:DATABASE_URL="sqlite:///project.db"
+python -m flask --app crm.ui.web.app:create_app run --debug
+```
 
-| Field | Type | Description |
-|------|------|-------------|
-| Social_Media_ID (PK) | Int | Unique account identifier |
-| Influencer_ID (FK) | Int | Associated influencer |
-| Type | Enum | Platform (Instagram, YouTube, Facebook, etc.) |
-| Link | String | Profile URL |
+Optional auto-import on startup:
 
-### Brands
+```powershell
+$env:CRM_AUTO_IMPORT="1"
+```
 
-| Field | Type | Description |
-|------|------|-------------|
-| Brand_ID (PK) | Int | Unique brand identifier |
-| Description | String | Brand description |
+### PostgreSQL Backend
 
-### Brand Representatives
+Set postgres backend and connection URL:
 
-| Field | Type | Description |
-|------|------|-------------|
-| Brand_Representative_ID (PK) | Int | Unique representative identifier |
-| Person_ID (FK) | Int | Associated person |
-| Brand_ID (FK) | Int | Associated brand |
-| Notes | String | Additional relevant notes |
-| Is_Active | Boolean | Active status |
+```powershell
+$env:CRM_STORAGE_BACKEND="postgres"
+$env:DATABASE_URL="postgresql://username:password@localhost:5432/alina_crm"
+python -m flask --app crm.ui.web.app:create_app run --debug
+```
 
-### Deals / Campaigns
+Optional auto-import on startup:
 
-| Field | Type | Description |
-|------|------|-------------|
-| Deal_ID (PK) | Int | Unique deal identifier |
-| Influencer_ID (FK) | Int | Associated influencer |
-| Brand_ID (FK) | Int | Associated brand |
-| Brand_Representative_ID (FK) | Int | Brand contact |
-| Pitch_Date | Date | Date pitched |
-| Is_Active | Boolean | Active deal status |
-| Is_Successful | Boolean | Outcome indicator |
+```powershell
+$env:CRM_AUTO_IMPORT="1"
+```
 
-### Contracts
+At startup, the app ensures schema exists. Import is idempotent and can be triggered through Admin DB Dashboard as well.
 
-| Field | Type | Description |
-|------|------|-------------|
-| Contract_ID (PK) | Int | Unique contract identifier |
-| Deal_ID (FK) | Int | Associated deal |
-| Details | String | Contract terms and conditions |
-| Payment | Float | Total payment amount |
-| Agency_Percentage | Float | Agency revenue percentage |
-| Start_Date | Date | Contract start date |
-| End_Date | Date | Contract end date |
-| Status | Enum | Workflow state (Sent, Pending, Accepted, Rejected, etc.) |
-| Is_Approved | Boolean | Final approval status |
+## Import and Migration Behavior
 
-## Potential Enhancements
+- JSON backend runs JSON schema migration as needed before loading data.
+- DB backends ensure relational schema exists.
+- PostgreSQL import is idempotent:
+  - if `roles` table already has rows, import is skipped.
+- SQLite import follows equivalent idempotent behavior.
 
-- **Social Media API Integrations**  
-  Integration with Instagram, Facebook, and YouTube APIs to ingest performance metrics and market trends.
+## Admin DB Dashboard
 
-- **AI & Machine Learning**  
-  Application of machine learning models for predictive analytics and performance insights.
+Route:
 
-- **LLM-Powered Contract Review**  
-  Automated contract analysis to summarize key terms, flag risks, and generate counterproposal recommendations aligned with agency standards.
+- `/admin/db`
 
-## Status
+Access:
 
-This repository represents the foundational design and planning phase of the Alina J Talent Connect CRM system. Implementation details, architecture, and deployment instructions will be added as development progresses.
+- Requires authenticated user.
+- Requires role name `Admin`.
+
+What it shows:
+
+- Active storage backend
+- DB connectivity status (db backends)
+- Row counts by table
+- Table explorer (columns + paginated rows)
+- Last import timestamp (postgres)
+
+Actions:
+
+- Import from `data.json` (idempotent)
+- Admin-only user password reset from the `users` table view
+
+Security notes:
+
+- No arbitrary SQL execution UI is exposed.
+- Connection strings are not displayed in dashboard output.
+
+## CLI Entry Point
+
+CLI launcher:
+
+```powershell
+python app.py
+```
+
+## Database Bootstrap Helper (SQLite)
+
+You can initialize and seed SQLite directly:
+
+```powershell
+python create_db.py
+```
+
+Optional variables for this script:
+
+- `DATABASE_URL` (default: `sqlite:///project.db`)
+- `DATA_JSON_PATH` (default: `./data.json`)
+
+## Testing
+
+Run all tests:
+
+```powershell
+pytest
+```
+
+Run targeted tests:
+
+```powershell
+pytest tests/test_admin_routes.py
+pytest tests/test_postgres_import.py
+pytest tests/test_postgres_schema.py
+```
+
+## Repository Layout (Top Level)
+
+- `crm/domain`: domain models and validators
+- `crm/persistence`: data stores, migration, repository helpers, import tools
+- `crm/policies`: access control policy
+- `crm/services`: application services
+- `crm/ui/cli.py`: CLI interface
+- `crm/ui/web`: Flask app, routes, templates, static assets
+- `tests`: unit and route tests
+
+## Notes for Deployment
+
+- Default behavior is backward compatible with `data.json`.
+- To switch environments safely:
+  1. configure db backend in staging
+  2. verify `/admin/db` connectivity
+  3. run import from dashboard (or set `CRM_AUTO_IMPORT=1`)
+  4. validate core entity pages and auth workflows
+
 
