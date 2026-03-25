@@ -65,6 +65,11 @@
         <li class="{% if active_page == 'settings' %}active{% endif %}">
           <a href="{{ url_for('settings.settings') }}">&#9881;&#65039; Settings</a>
         </li>
+        {% if current_role == 'Admin' %}
+        <li class="{% if active_page == 'admin_db' %}active{% endif %}">
+          <a href="{{ url_for('admin_db.db_dashboard') }}">&#128202; DB Dashboard</a>
+        </li>
+        {% endif %}
       </ul>
 
       <div class="nav-divider"></div>

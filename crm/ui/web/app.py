@@ -20,7 +20,13 @@ from crm.policies.access_control import AccessPolicy
 
 
 def create_app(data_path: str | None = None) -> Flask:
-    """Flask application factory."""
+    """Flask application factory.
+
+    Storage backend is selected via environment variables:
+      CRM_STORAGE_BACKEND=postgres  (default: json)
+      DATABASE_URL=postgresql://...  (required when backend=postgres)
+      CRM_AUTO_IMPORT=1             (optional: auto-import data.json into PG on startup)
+    """
     app = Flask(
         __name__,
         template_folder="templates",
@@ -30,14 +36,33 @@ def create_app(data_path: str | None = None) -> Flask:
 
     resolved_path = data_path or "data.json"
 
-    # Run schema migration once (no-op if already migrated)
-    run_migration(resolved_path)
+    # ------------------------------------------------------------------ #
+    # Storage backend selection                                            #
+    # ------------------------------------------------------------------ #
+    backend = os.environ.get("CRM_STORAGE_BACKEND", "json").lower()
+    database_url = os.environ.get("DATABASE_URL", "")
 
-    # Single shared store – mirrors the CLI's approach
-    store = JsonDataStore(resolved_path)
+    if backend == "postgres" and database_url:
+        from crm.persistence.postgres_store import PostgresDataStore
+        store = PostgresDataStore(database_url)
+        store.ensure_schema()
+
+        # Optional automatic import from data.json at startup
+        if os.environ.get("CRM_AUTO_IMPORT", "0") == "1":
+            from crm.persistence.postgres_import import import_from_json
+            result = import_from_json(resolved_path, store)
+            if not result.get("skipped"):
+                print(f"[app] Auto-import: {result.get('message')}")
+    else:
+        backend = "json"
+        # Run schema migration once (no-op if already migrated)
+        run_migration(resolved_path)
+        store = JsonDataStore(resolved_path)
 
     # Attach services to app context so routes can reach them via current_app
     app.config["store"] = store
+    app.config["storage_backend"] = backend
+    app.config["data_path"] = resolved_path
     app.config["auth_service"] = AuthService(store)
     app.config["employee_service"] = EmployeeService(store)
     app.config["creator_service"] = CreatorService(store)
@@ -52,11 +77,13 @@ def create_app(data_path: str | None = None) -> Flask:
     from crm.ui.web.routes.portal_routes import portal_bp
     from crm.ui.web.routes.entity_routes import entity_bp
     from crm.ui.web.routes.settings_routes import settings_bp
+    from crm.ui.web.routes.admin_db_routes import admin_db_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(portal_bp)
     app.register_blueprint(entity_bp)
     app.register_blueprint(settings_bp)
+    app.register_blueprint(admin_db_bp)
 
     # Error handlers
     @app.errorhandler(403)
