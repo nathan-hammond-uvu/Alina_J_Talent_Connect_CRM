@@ -1,0 +1,83 @@
+{
+    "roles": [
+        {
+            "role_id": 1,
+            "role_name": "User"
+        },
+        {
+            "role_id": 2,
+            "role_name": "Employee"
+        },
+        {
+            "role_id": 3,
+            "role_name": "Manager"
+        },
+        {
+            "role_id": 4,
+            "role_name": "Admin"
+        }
+    ],
+    "persons": [
+        {
+            "person_id": 5,
+            "first_name": "Admin",
+            "last_name": "User",
+            "full_name": "Admin User",
+            "display_name": "Admin",
+            "email": "admin@example.com",
+            "phone": "N/A",
+            "address": "N/A",
+            "city": "N/A",
+            "state": "N/A",
+            "zip": "N/A"
+        },
+        {
+            "person_id": 7,
+            "first_name": "Nathan",
+            "last_name": "Hammond",
+            "full_name": "Nathan Hammond",
+            "display_name": "Nate",
+            "email": "11094717@uvu.edu",
+            "phone": "999-999-9999",
+            "address": "street",
+            "city": "city",
+            "state": "UT",
+            "zip": "84061"
+        }
+    ],
+    "users": [
+        {
+            "user_id": 6,
+            "username": "admin",
+            "password": "scrypt:32768:8:1$ojG3lnlYoRgihsOp$4885dce85bad4d85685e67c85d094ef6c657502b17482cc24cbecfe111026b55186d252d8aae5f2eb0d7eb24328b51175f8181c5710ea2eff30787be9046100f",
+            "role_id": 4,
+            "person_id": 5
+        },
+        {
+            "user_id": 8,
+            "username": "darthnator",
+            "password": "scrypt:32768:8:1$3IgnloDf5mymvi1M$5ef6607d5596ccb5c5eeab9e2d099bf663833d3ba2053c31a1ac6e356819dd8ebf9fbaebc63b073cc74018e0f5a608724572237911898d6f1b4f66dc7bd501fa",
+            "role_id": 1,
+            "person_id": 7
+        }
+    ],
+    "employees": [
+        {
+            "employee_id": 9,
+            "person_id": 7,
+            "position": "CEO",
+            "title": "Alina",
+            "manager_id": 0,
+            "start_date": "2019-01-01",
+            "end_date": null,
+            "is_active": true,
+            "is_manager": true
+        }
+    ],
+    "clients": [],
+    "social_media_accounts": [],
+    "brands": [],
+    "brand_representatives": [],
+    "deals": [],
+    "contracts": []
+}

@@ -6,6 +6,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent))
 
 from flask import Flask
+from dotenv import load_dotenv
 
 from crm.persistence.json_store import JsonDataStore
 from crm.persistence.migration import run_migration
@@ -21,6 +22,9 @@ from crm.policies.access_control import AccessPolicy
 
 def create_app(data_path: str | None = None) -> Flask:
     """Flask application factory."""
+    # Load environment variables from .env for local development.
+    load_dotenv()
+
     app = Flask(
         __name__,
         template_folder="templates",
