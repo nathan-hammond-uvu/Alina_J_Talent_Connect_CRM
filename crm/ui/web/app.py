@@ -23,9 +23,11 @@ def create_app(data_path: str | None = None) -> Flask:
     """Flask application factory.
 
     Storage backend is selected via environment variables:
-      CRM_STORAGE_BACKEND=postgres  (default: json)
-      DATABASE_URL=postgresql://...  (required when backend=postgres)
-      CRM_AUTO_IMPORT=1             (optional: auto-import data.json into PG on startup)
+      CRM_STORAGE_BACKEND=json      (default) – uses data.json
+      CRM_STORAGE_BACKEND=sqlite    – uses SQLAlchemy + SQLite
+      CRM_STORAGE_BACKEND=postgres  – uses PostgreSQL (requires DATABASE_URL)
+      DATABASE_URL=...              – connection URL for sqlite or postgres backends
+      CRM_AUTO_IMPORT=1             – auto-import data.json into the DB on startup
     """
     app = Flask(
         __name__,
@@ -53,6 +55,28 @@ def create_app(data_path: str | None = None) -> Flask:
             result = import_from_json(resolved_path, store)
             if not result.get("skipped"):
                 print(f"[app] Auto-import: {result.get('message')}")
+
+    elif backend == "sqlite":
+        from crm.persistence.sqlite_store import SqliteDataStore
+        db_url = database_url or "sqlite:///project.db"
+        store = SqliteDataStore(db_url)
+        store.ensure_schema()
+
+        # Optional automatic import from data.json at startup
+        if os.environ.get("CRM_AUTO_IMPORT", "0") == "1":
+            existing = store.load()
+            if not existing.get("roles"):
+                import json
+                from crm.persistence.migration import migrate, needs_migration
+                from crm.persistence.json_store import JsonDataStore as _JDS
+                if os.path.exists(resolved_path):
+                    with open(resolved_path) as f:
+                        raw = json.load(f)
+                    seeded = migrate(raw) if needs_migration(raw) else raw
+                    seeded.setdefault("access_control_matrix", _JDS.DEFAULT_ACM)
+                    store.save(seeded)
+                    print("[app] Auto-seeded SQLite DB from data.json.")
+
     else:
         backend = "json"
         # Run schema migration once (no-op if already migrated)

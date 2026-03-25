@@ -43,18 +43,21 @@ def db_dashboard():
 
     ctx: dict = {
         "backend": backend,
-        "is_postgres": backend == "postgres",
+        "is_db_backend": backend in ("postgres", "sqlite"),
         "active_page": "admin_db",
     }
 
-    if backend == "postgres":
+    if backend in ("postgres", "sqlite"):
         ok, status_msg = store.check_connectivity()
         ctx["db_connected"] = ok
         ctx["db_status"] = status_msg
         if ok:
             ctx["table_counts"] = store.get_table_counts()
-            from crm.persistence.postgres_import import get_last_import_timestamp
-            ctx["last_import_at"] = get_last_import_timestamp(store)
+            if backend == "postgres":
+                from crm.persistence.postgres_import import get_last_import_timestamp
+                ctx["last_import_at"] = get_last_import_timestamp(store)
+            else:
+                ctx["last_import_at"] = None
 
     ctx.update(portal_context(user))
     return render_template("admin/db_dashboard.html", **ctx)
@@ -63,20 +66,43 @@ def db_dashboard():
 @admin_db_bp.route("/admin/db/import", methods=["POST"])
 @login_required
 def db_import():
-    """Trigger an idempotent import from data.json into PostgreSQL."""
+    """Trigger an idempotent import from data.json into the database."""
     _get_admin_user()
 
     backend = current_app.config.get("storage_backend", "json")
-    if backend != "postgres":
-        flash("Import is only available when using the PostgreSQL backend.", "warning")
+    if backend not in ("postgres", "sqlite"):
+        flash("Import is only available when using a database backend (postgres or sqlite).", "warning")
         return redirect(url_for("admin_db.db_dashboard"))
 
     store = current_app.config["store"]
     json_path = current_app.config.get("data_path", "data.json")
 
-    from crm.persistence.postgres_import import import_from_json
-    result = import_from_json(json_path, store)
+    if backend == "postgres":
+        from crm.persistence.postgres_import import import_from_json
+        result = import_from_json(json_path, store)
+        category = "success" if result["success"] else "danger"
+        flash(result["message"], category)
+    else:
+        # SQLite: check if already seeded, then seed
+        import json as _json
+        import os
+        from crm.persistence.migration import migrate, needs_migration
+        from crm.persistence.json_store import JsonDataStore
 
-    category = "success" if result["success"] else "danger"
-    flash(result["message"], category)
+        existing = store.load()
+        if existing.get("roles"):
+            flash("Data already exists in the database — import skipped (idempotent).", "success")
+        elif not os.path.exists(json_path):
+            flash(f"JSON file not found: {json_path}", "danger")
+        else:
+            try:
+                with open(json_path) as f:
+                    raw = _json.load(f)
+                seeded = migrate(raw) if needs_migration(raw) else raw
+                seeded.setdefault("access_control_matrix", JsonDataStore.DEFAULT_ACM)
+                store.save(seeded)
+                flash("Import completed successfully.", "success")
+            except Exception as exc:
+                flash(f"Import failed: {exc}", "danger")
+
     return redirect(url_for("admin_db.db_dashboard"))

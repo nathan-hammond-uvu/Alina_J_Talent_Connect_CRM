@@ -204,8 +204,12 @@ class PostgresDataStore:
             conn.close()
 
     def next_id(self, data: dict) -> int:
-        """Return the next available global ID (same interface as JsonDataStore)."""
-        if "_next_id" not in data:
+        """Return the next available global ID (same interface as JsonDataStore).
+
+        Derives the counter from the maximum existing entity ID whenever
+        ``_next_id`` is absent or 0 (i.e., uninitialized after a fresh seed).
+        """
+        if "_next_id" not in data or data["_next_id"] == 0:
             max_id = 0
             for key, entity_list in data.items():
                 if not isinstance(entity_list, list):

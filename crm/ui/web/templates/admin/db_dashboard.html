@@ -16,7 +16,7 @@
         <th>Backend</th>
         <td><span class="badge">{{ backend }}</span></td>
       </tr>
-      {% if is_postgres %}
+      {% if is_db_backend %}
       <tr>
         <th>Status</th>
         <td>
@@ -37,7 +37,7 @@
   </table>
 </div>
 
-{% if is_postgres and db_connected %}
+{% if is_db_backend and db_connected %}
 
 <!-- Card 2: Table Row Counts -->
 <div class="card">
@@ -84,9 +84,9 @@
 <!-- Card 4: Actions -->
 <div class="card">
   <h3>&#9881;&#65039; Actions</h3>
-  {% if is_postgres %}
+  {% if is_db_backend %}
   <p class="card-description">
-    Import data from <code>data.json</code> into PostgreSQL. This operation is
+    Import data from <code>data.json</code> into the database. This operation is
     <strong>idempotent</strong> — it will not overwrite existing data.
   </p>
   <form method="post" action="{{ url_for('admin_db.db_import') }}">
@@ -95,8 +95,8 @@
   {% else %}
   <p class="card-description">
     Currently using the <strong>JSON file</strong> backend. Set
-    <code>CRM_STORAGE_BACKEND=postgres</code> and <code>DATABASE_URL</code>
-    environment variables to switch to PostgreSQL.
+    <code>CRM_STORAGE_BACKEND=sqlite</code> (or <code>postgres</code>) and optionally
+    <code>DATABASE_URL</code> to switch to a database backend.
   </p>
   {% endif %}
 </div>
