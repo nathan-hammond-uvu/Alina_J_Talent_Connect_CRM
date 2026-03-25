@@ -1,0 +1,103 @@
+{% extends "base_portal.html" %}
+{% set active_page = "admin_db" %}
+{% block title %}DB Dashboard – Talent Connect CRM{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1>&#128202; Database Dashboard</h1>
+  <p class="page-subtitle">Administrator-only view of the storage backend.</p>
+</div>
+
+<!-- Card 1: Backend -->
+<div class="card">
+  <h3>&#128268; Storage Backend</h3>
+  <table class="data-table settings-table">
+    <tbody>
+      <tr>
+        <th>Backend</th>
+        <td><span class="badge">{{ backend }}</span></td>
+      </tr>
+      {% if is_db_backend %}
+      <tr>
+        <th>Status</th>
+        <td>
+          {% if db_connected %}
+          <span class="badge badge-success">&#10003; {{ db_status }}</span>
+          {% else %}
+          <span class="badge badge-danger">&#10007; {{ db_status }}</span>
+          {% endif %}
+        </td>
+      </tr>
+      {% else %}
+      <tr>
+        <th>Status</th>
+        <td><span class="badge">N/A (JSON file)</span></td>
+      </tr>
+      {% endif %}
+    </tbody>
+  </table>
+</div>
+
+{% if is_db_backend and db_connected %}
+
+<!-- Card 2: Table Row Counts -->
+<div class="card">
+  <h3>&#128202; Table Row Counts</h3>
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>Table</th>
+        <th>Rows</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for table_name, count in table_counts.items() %}
+      <tr>
+        <td>{{ table_name | replace("_", " ") | title }}</td>
+        <td>
+          {% if count >= 0 %}
+          {{ count }}
+          {% else %}
+          <em>error</em>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<!-- Card 3: Last Import -->
+<div class="card">
+  <h3>&#128337; Import History</h3>
+  <table class="data-table settings-table">
+    <tbody>
+      <tr>
+        <th>Last Import</th>
+        <td>{{ last_import_at if last_import_at else "Never" }}</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+{% endif %}
+
+<!-- Card 4: Actions -->
+<div class="card">
+  <h3>&#9881;&#65039; Actions</h3>
+  {% if is_db_backend %}
+  <p class="card-description">
+    Import data from <code>data.json</code> into the database. This operation is
+    <strong>idempotent</strong> — it will not overwrite existing data.
+  </p>
+  <form method="post" action="{{ url_for('admin_db.db_import') }}">
+    <button type="submit" class="btn btn-primary">&#8659; Import from data.json</button>
+  </form>
+  {% else %}
+  <p class="card-description">
+    Currently using the <strong>JSON file</strong> backend. Set
+    <code>CRM_STORAGE_BACKEND=sqlite</code> (or <code>postgres</code>) and optionally
+    <code>DATABASE_URL</code> to switch to a database backend.
+  </p>
+  {% endif %}
+</div>
+{% endblock %}

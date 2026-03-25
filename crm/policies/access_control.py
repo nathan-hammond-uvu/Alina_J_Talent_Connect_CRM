@@ -173,6 +173,10 @@ class AccessPolicy:
         """Only Admin can edit the ACM."""
         return self._get_role_name(user) == "Admin"
 
+    def is_admin(self, user: dict) -> bool:
+        """Return True if *user* has the Admin role."""
+        return self._get_role_name(user) == "Admin"
+
     def get_acm(self) -> dict:
         return self._acm()
 

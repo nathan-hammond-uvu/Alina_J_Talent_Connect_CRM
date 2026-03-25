@@ -21,10 +21,15 @@ from crm.policies.access_control import AccessPolicy
 
 
 def create_app(data_path: str | None = None) -> Flask:
-    """Flask application factory."""
-    # Load environment variables from .env for local development.
-    load_dotenv()
+    """Flask application factory.
 
+    Storage backend is selected via environment variables:
+      CRM_STORAGE_BACKEND=json      (default) – uses data.json
+      CRM_STORAGE_BACKEND=sqlite    – uses SQLAlchemy + SQLite
+      CRM_STORAGE_BACKEND=postgres  – uses PostgreSQL (requires DATABASE_URL)
+      DATABASE_URL=...              – connection URL for sqlite or postgres backends
+      CRM_AUTO_IMPORT=1             – auto-import data.json into the DB on startup
+    """
     app = Flask(
         __name__,
         template_folder="templates",
@@ -34,14 +39,55 @@ def create_app(data_path: str | None = None) -> Flask:
 
     resolved_path = data_path or "data.json"
 
-    # Run schema migration once (no-op if already migrated)
-    run_migration(resolved_path)
+    # ------------------------------------------------------------------ #
+    # Storage backend selection                                            #
+    # ------------------------------------------------------------------ #
+    backend = os.environ.get("CRM_STORAGE_BACKEND", "json").lower()
+    database_url = os.environ.get("DATABASE_URL", "")
 
-    # Single shared store – mirrors the CLI's approach
-    store = JsonDataStore(resolved_path)
+    if backend == "postgres" and database_url:
+        from crm.persistence.postgres_store import PostgresDataStore
+        store = PostgresDataStore(database_url)
+        store.ensure_schema()
+
+        # Optional automatic import from data.json at startup
+        if os.environ.get("CRM_AUTO_IMPORT", "0") == "1":
+            from crm.persistence.postgres_import import import_from_json
+            result = import_from_json(resolved_path, store)
+            if not result.get("skipped"):
+                print(f"[app] Auto-import: {result.get('message')}")
+
+    elif backend == "sqlite":
+        from crm.persistence.sqlite_store import SqliteDataStore
+        db_url = database_url or "sqlite:///project.db"
+        store = SqliteDataStore(db_url)
+        store.ensure_schema()
+
+        # Optional automatic import from data.json at startup
+        if os.environ.get("CRM_AUTO_IMPORT", "0") == "1":
+            existing = store.load()
+            if not existing.get("roles"):
+                import json
+                from crm.persistence.migration import migrate, needs_migration
+                from crm.persistence.json_store import JsonDataStore as _JDS
+                if os.path.exists(resolved_path):
+                    with open(resolved_path) as f:
+                        raw = json.load(f)
+                    seeded = migrate(raw) if needs_migration(raw) else raw
+                    seeded.setdefault("access_control_matrix", _JDS.DEFAULT_ACM)
+                    store.save(seeded)
+                    print("[app] Auto-seeded SQLite DB from data.json.")
+
+    else:
+        backend = "json"
+        # Run schema migration once (no-op if already migrated)
+        run_migration(resolved_path)
+        store = JsonDataStore(resolved_path)
 
     # Attach services to app context so routes can reach them via current_app
     app.config["store"] = store
+    app.config["storage_backend"] = backend
+    app.config["data_path"] = resolved_path
     app.config["auth_service"] = AuthService(store)
     app.config["employee_service"] = EmployeeService(store)
     app.config["creator_service"] = CreatorService(store)
@@ -56,11 +102,13 @@ def create_app(data_path: str | None = None) -> Flask:
     from crm.ui.web.routes.portal_routes import portal_bp
     from crm.ui.web.routes.entity_routes import entity_bp
     from crm.ui.web.routes.settings_routes import settings_bp
+    from crm.ui.web.routes.admin_db_routes import admin_db_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(portal_bp)
     app.register_blueprint(entity_bp)
     app.register_blueprint(settings_bp)
+    app.register_blueprint(admin_db_bp)
 
     # Error handlers
     @app.errorhandler(403)
