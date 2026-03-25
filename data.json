@@ -43,6 +43,19 @@
             "city": "city",
             "state": "UT",
             "zip": "84061"
+        },
+        {
+            "person_id": 10,
+            "first_name": "Bob",
+            "last_name": "Johnson",
+            "full_name": "Bob Johnson",
+            "display_name": "Bob Johnson",
+            "email": "bob.johnson@gmail.com",
+            "phone": "123-456-7890",
+            "address": "",
+            "city": "",
+            "state": "",
+            "zip": ""
         }
     ],
     "users": [
@@ -65,19 +78,279 @@
         {
             "employee_id": 9,
             "person_id": 7,
-            "position": "CEO",
-            "title": "Alina",
+            "position": "IT",
+            "title": "AI Specialist",
             "manager_id": 0,
             "start_date": "2019-01-01",
             "end_date": null,
             "is_active": true,
-            "is_manager": true
+            "is_manager": false
         }
     ],
-    "clients": [],
     "social_media_accounts": [],
     "brands": [],
-    "brand_representatives": [],
     "deals": [],
-    "contracts": []
+    "contracts": [],
+    "creators": [
+        {
+            "creator_id": 11,
+            "person_id": 10,
+            "employee_id": 9,
+            "description": "Test"
+        }
+    ],
+    "brand_contacts": [],
+    "access_control_matrix": {
+        "Admin": {
+            "persons": {
+                "create": true,
+                "read": true,
+                "update": true,
+                "delete": true
+            },
+            "users": {
+                "create": true,
+                "read": true,
+                "update": true,
+                "delete": true
+            },
+            "employees": {
+                "create": true,
+                "read": true,
+                "update": true,
+                "delete": true
+            },
+            "creators": {
+                "create": true,
+                "read": true,
+                "update": true,
+                "delete": true
+            },
+            "brand_contacts": {
+                "create": true,
+                "read": true,
+                "update": true,
+                "delete": true
+            },
+            "brands": {
+                "create": true,
+                "read": true,
+                "update": true,
+                "delete": true
+            },
+            "deals": {
+                "create": true,
+                "read": true,
+                "update": true,
+                "delete": true
+            },
+            "contracts": {
+                "create": true,
+                "read": true,
+                "update": true,
+                "delete": true
+            }
+        },
+        "Manager": {
+            "persons": {
+                "create": true,
+                "read": true,
+                "update": true,
+                "delete": true
+            },
+            "users": {
+                "create": false,
+                "read": true,
+                "update": false,
+                "delete": false
+            },
+            "employees": {
+                "create": true,
+                "read": true,
+                "update": true,
+                "delete": false
+            },
+            "creators": {
+                "create": true,
+                "read": true,
+                "update": true,
+                "delete": true
+            },
+            "brand_contacts": {
+                "create": true,
+                "read": true,
+                "update": true,
+                "delete": true
+            },
+            "brands": {
+                "create": true,
+                "read": true,
+                "update": true,
+                "delete": true
+            },
+            "deals": {
+                "create": true,
+                "read": true,
+                "update": true,
+                "delete": true
+            },
+            "contracts": {
+                "create": true,
+                "read": true,
+                "update": true,
+                "delete": true
+            }
+        },
+        "Employee": {
+            "persons": {
+                "create": false,
+                "read": true,
+                "update": true,
+                "delete": false
+            },
+            "users": {
+                "create": false,
+                "read": false,
+                "update": false,
+                "delete": false
+            },
+            "employees": {
+                "create": false,
+                "read": true,
+                "update": false,
+                "delete": false
+            },
+            "creators": {
+                "create": true,
+                "read": true,
+                "update": true,
+                "delete": true
+            },
+            "brand_contacts": {
+                "create": true,
+                "read": true,
+                "update": true,
+                "delete": false
+            },
+            "brands": {
+                "create": false,
+                "read": true,
+                "update": false,
+                "delete": false
+            },
+            "deals": {
+                "create": false,
+                "read": true,
+                "update": false,
+                "delete": false
+            },
+            "contracts": {
+                "create": false,
+                "read": true,
+                "update": false,
+                "delete": false
+            }
+        },
+        "Creator": {
+            "persons": {
+                "create": false,
+                "read": true,
+                "update": false,
+                "delete": false
+            },
+            "users": {
+                "create": false,
+                "read": false,
+                "update": false,
+                "delete": false
+            },
+            "employees": {
+                "create": false,
+                "read": false,
+                "update": false,
+                "delete": false
+            },
+            "creators": {
+                "create": false,
+                "read": true,
+                "update": false,
+                "delete": false
+            },
+            "brand_contacts": {
+                "create": false,
+                "read": true,
+                "update": false,
+                "delete": false
+            },
+            "brands": {
+                "create": false,
+                "read": true,
+                "update": false,
+                "delete": false
+            },
+            "deals": {
+                "create": false,
+                "read": true,
+                "update": false,
+                "delete": false
+            },
+            "contracts": {
+                "create": false,
+                "read": false,
+                "update": false,
+                "delete": false
+            }
+        },
+        "User": {
+            "persons": {
+                "create": false,
+                "read": false,
+                "update": false,
+                "delete": false
+            },
+            "users": {
+                "create": false,
+                "read": false,
+                "update": false,
+                "delete": false
+            },
+            "employees": {
+                "create": false,
+                "read": false,
+                "update": false,
+                "delete": false
+            },
+            "creators": {
+                "create": false,
+                "read": false,
+                "update": false,
+                "delete": false
+            },
+            "brand_contacts": {
+                "create": false,
+                "read": false,
+                "update": false,
+                "delete": false
+            },
+            "brands": {
+                "create": false,
+                "read": false,
+                "update": false,
+                "delete": false
+            },
+            "deals": {
+                "create": false,
+                "read": true,
+                "update": false,
+                "delete": false
+            },
+            "contracts": {
+                "create": false,
+                "read": false,
+                "update": false,
+                "delete": false
+            }
+        }
+    },
+    "_next_id": 11
 }

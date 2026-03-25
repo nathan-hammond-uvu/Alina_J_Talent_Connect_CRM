@@ -6,6 +6,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent))
 
 from flask import Flask
+from dotenv import load_dotenv
 
 from crm.persistence.json_store import JsonDataStore
 from crm.persistence.migration import run_migration
