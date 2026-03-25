@@ -124,3 +124,29 @@ class TestRegisterUser:
         person = next((p for p in data["persons"] if p["first_name"] == "Bob"), None)
         assert person is not None
         assert person["last_name"] == "Smith"
+
+
+class TestResetPassword:
+    def test_reset_password_updates_hash_and_authenticates(self, auth, store):
+        auth.register_user(
+            {"first_name": "Reset", "last_name": "User", "full_name": "Reset User",
+             "display_name": "Reset", "email": "reset@user.com", "phone": "", "address": "",
+             "city": "", "state": "", "zip": ""},
+            "resetuser", "oldpassword",
+        )
+
+        data = store.load()
+        user = next(u for u in data["users"] if u["username"] == "resetuser")
+        old_hash = user["password"]
+
+        assert auth.reset_password_for_user(user["user_id"], "newpassword123") is True
+
+        data2 = store.load()
+        user2 = next(u for u in data2["users"] if u["username"] == "resetuser")
+        assert user2["password"] != old_hash
+        assert user2["password"].startswith(("pbkdf2:", "scrypt:"))
+        assert auth.authenticate("resetuser", "oldpassword") is None
+        assert auth.authenticate("resetuser", "newpassword123") is not None
+
+    def test_reset_password_returns_false_for_unknown_user(self, auth):
+        assert auth.reset_password_for_user(999999, "newpassword123") is False

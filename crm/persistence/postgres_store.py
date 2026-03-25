@@ -259,3 +259,68 @@ class PostgresDataStore:
         finally:
             conn.close()
         return counts
+
+    def get_table_names(self) -> list[str]:
+        """Return a sorted list of inspectable table names."""
+        names = list(TABLE_MAP.keys())
+        names.append("settings")
+        return sorted(names)
+
+    def get_table_columns(self, table_name: str) -> list[dict[str, str]]:
+        """Return column metadata for *table_name*.
+
+        Each entry includes keys: name, type, nullable.
+        """
+        if table_name not in self.get_table_names():
+            return []
+
+        conn = self._connect()
+        try:
+            with conn.cursor() as cur:
+                cur.execute(
+                    "SELECT column_name, data_type, is_nullable "
+                    "FROM information_schema.columns "
+                    "WHERE table_schema = 'public' AND table_name = %s "
+                    "ORDER BY ordinal_position",
+                    [table_name],
+                )
+                rows = cur.fetchall()
+                return [
+                    {"name": r[0], "type": r[1], "nullable": r[2]}
+                    for r in rows
+                ]
+        finally:
+            conn.close()
+
+    def get_table_rows(
+        self,
+        table_name: str,
+        *,
+        page: int = 1,
+        page_size: int = 25,
+    ) -> tuple[list[str], list[dict[str, Any]], int]:
+        """Return (columns, rows, total_rows) for *table_name* with pagination."""
+        if table_name not in self.get_table_names():
+            return [], [], 0
+
+        safe_page = max(1, int(page))
+        safe_size = max(1, min(int(page_size), 100))
+        offset = (safe_page - 1) * safe_size
+
+        conn = self._connect()
+        try:
+            with conn.cursor() as cur:
+                cur.execute(f"SELECT COUNT(*) FROM {table_name}")
+                total_rows = int(cur.fetchone()[0])
+
+                cur.execute(
+                    f"SELECT * FROM {table_name} ORDER BY 1 LIMIT %s OFFSET %s",
+                    [safe_size, offset],
+                )
+                rows = cur.fetchall()
+                columns = [d.name for d in cur.description] if cur.description else []
+                row_dicts = [dict(zip(columns, r)) for r in rows]
+
+                return columns, row_dicts, total_rows
+        finally:
+            conn.close()

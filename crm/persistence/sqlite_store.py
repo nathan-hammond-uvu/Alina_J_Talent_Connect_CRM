@@ -225,3 +225,56 @@ class SqliteDataStore:
                 except Exception:
                     counts[key] = -1
         return counts
+
+    def get_table_names(self) -> list[str]:
+        """Return a sorted list of inspectable table names."""
+        names = [key for key, _model, _pk in _MODEL_MAP]
+        names.append("settings")
+        return sorted(names)
+
+    def get_table_columns(self, table_name: str) -> list[dict[str, str]]:
+        """Return column metadata for *table_name*.
+
+        Each entry includes keys: name, type, nullable.
+        """
+        if table_name not in self.get_table_names():
+            return []
+
+        inspector = inspect(self._engine)
+        cols = inspector.get_columns(table_name)
+        return [
+            {
+                "name": str(c.get("name", "")),
+                "type": str(c.get("type", "")),
+                "nullable": "YES" if c.get("nullable", True) else "NO",
+            }
+            for c in cols
+        ]
+
+    def get_table_rows(
+        self,
+        table_name: str,
+        *,
+        page: int = 1,
+        page_size: int = 25,
+    ) -> tuple[list[str], list[dict[str, Any]], int]:
+        """Return (columns, rows, total_rows) for *table_name* with pagination."""
+        if table_name not in self.get_table_names():
+            return [], [], 0
+
+        safe_page = max(1, int(page))
+        safe_size = max(1, min(int(page_size), 100))
+        offset = (safe_page - 1) * safe_size
+
+        with self._engine.connect() as conn:
+            total_rows = int(
+                conn.execute(text(f"SELECT COUNT(*) FROM {table_name}")).scalar() or 0
+            )
+            result = conn.execute(
+                text(f"SELECT * FROM {table_name} LIMIT :limit OFFSET :offset"),
+                {"limit": safe_size, "offset": offset},
+            )
+            columns = list(result.keys())
+            rows = [dict(row._mapping) for row in result]
+
+        return columns, rows, total_rows

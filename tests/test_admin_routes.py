@@ -134,6 +134,49 @@ class TestAdminDbImport:
         assert b"PostgreSQL" in resp.data or b"postgres" in resp.data.lower() or b"Import" in resp.data
 
 
+class TestAdminResetPassword:
+    def test_reset_password_rejected_on_json_backend(self, app_client):
+        c, _, _ = app_client
+        _login(c, "admin_db_test", "adminpass")
+        resp = c.post(
+            "/admin/db/users/reset-password",
+            data={"user_id": "1", "new_password": "newpass123", "confirm_password": "newpass123"},
+            follow_redirects=True,
+        )
+        assert resp.status_code == 200
+        assert b"database backend" in resp.data.lower()
+
+    def test_admin_can_reset_password_on_sqlite_backend(self, tmp_path, monkeypatch):
+        filepath, _admin_id, _regular_id = _bootstrap(str(tmp_path))
+        sqlite_path = os.path.join(str(tmp_path), "test_admin_reset.db")
+
+        monkeypatch.setenv("CRM_STORAGE_BACKEND", "sqlite")
+        monkeypatch.setenv("DATABASE_URL", f"sqlite:///{sqlite_path}")
+        monkeypatch.setenv("CRM_AUTO_IMPORT", "1")
+
+        app = create_app(data_path=filepath)
+        app.config["TESTING"] = True
+        app.config["WTF_CSRF_ENABLED"] = False
+
+        with app.test_client() as c:
+            _login(c, "admin_db_test", "adminpass")
+            resp = c.post(
+                "/admin/db/users/reset-password",
+                data={
+                    "user_id": str(_regular_id),
+                    "new_password": "resetpass123",
+                    "confirm_password": "resetpass123",
+                },
+                follow_redirects=True,
+            )
+            assert resp.status_code == 200
+            assert b"Password reset successfully" in resp.data
+
+        auth = app.config["auth_service"]
+        assert auth.authenticate("regular_db_test", "userpass") is None
+        assert auth.authenticate("regular_db_test", "resetpass123") is not None
+
+
 class TestAdminNavLink:
     def test_admin_sees_db_dashboard_link(self, app_client):
         """Admin user should see the DB Dashboard link in the sidebar."""

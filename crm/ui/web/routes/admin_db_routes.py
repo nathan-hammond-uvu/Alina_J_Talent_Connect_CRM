@@ -14,6 +14,7 @@ from flask import (
     flash,
     redirect,
     render_template,
+    request,
     url_for,
 )
 
@@ -53,6 +54,57 @@ def db_dashboard():
         ctx["db_status"] = status_msg
         if ok:
             ctx["table_counts"] = store.get_table_counts()
+            table_names = store.get_table_names()
+            ctx["table_names"] = table_names
+
+            # Read table/page selection from query params.
+            selected_table = request.args.get("table", "")
+            if selected_table not in table_names and table_names:
+                selected_table = table_names[0]
+
+            try:
+                page = max(1, int(request.args.get("page", 1)))
+            except ValueError:
+                page = 1
+
+            page_size = 25
+            table_columns: list[dict[str, str]] = []
+            preview_columns: list[str] = []
+            preview_rows: list[dict] = []
+            total_rows = 0
+
+            if selected_table:
+                table_columns = store.get_table_columns(selected_table)
+                preview_columns, preview_rows, total_rows = store.get_table_rows(
+                    selected_table,
+                    page=page,
+                    page_size=page_size,
+                )
+
+            reset_users: list[dict] = []
+            if selected_table == "users":
+                data = store.load()
+                reset_users = sorted(
+                    [
+                        {"user_id": u.get("user_id"), "username": u.get("username", "")}
+                        for u in data.get("users", [])
+                        if u.get("user_id") is not None
+                    ],
+                    key=lambda x: (x["username"] or "").lower(),
+                )
+
+            total_pages = max(1, (total_rows + page_size - 1) // page_size)
+
+            ctx["selected_table"] = selected_table
+            ctx["table_columns"] = table_columns
+            ctx["preview_columns"] = preview_columns
+            ctx["preview_rows"] = preview_rows
+            ctx["preview_total_rows"] = total_rows
+            ctx["preview_page"] = page
+            ctx["preview_page_size"] = page_size
+            ctx["preview_total_pages"] = total_pages
+            ctx["reset_users"] = reset_users
+
             if backend == "postgres":
                 from crm.persistence.postgres_import import get_last_import_timestamp
                 ctx["last_import_at"] = get_last_import_timestamp(store)
@@ -106,3 +158,41 @@ def db_import():
                 flash(f"Import failed: {exc}", "danger")
 
     return redirect(url_for("admin_db.db_dashboard"))
+
+
+@admin_db_bp.route("/admin/db/users/reset-password", methods=["POST"])
+@login_required
+def reset_user_password():
+    """Admin-only password reset for a selected user."""
+    _get_admin_user()
+
+    backend = current_app.config.get("storage_backend", "json")
+    if backend not in ("postgres", "sqlite"):
+        flash("Password reset is only available when using a database backend.", "warning")
+        return redirect(url_for("admin_db.db_dashboard", table="users"))
+
+    user_id_raw = request.form.get("user_id", "").strip()
+    new_password = request.form.get("new_password", "")
+    confirm_password = request.form.get("confirm_password", "")
+
+    try:
+        user_id = int(user_id_raw)
+    except ValueError:
+        flash("Please select a valid user.", "danger")
+        return redirect(url_for("admin_db.db_dashboard", table="users"))
+
+    if len(new_password) < 8:
+        flash("Password must be at least 8 characters.", "danger")
+        return redirect(url_for("admin_db.db_dashboard", table="users"))
+
+    if new_password != confirm_password:
+        flash("Password confirmation does not match.", "danger")
+        return redirect(url_for("admin_db.db_dashboard", table="users"))
+
+    auth_svc = current_app.config["auth_service"]
+    if auth_svc.reset_password_for_user(user_id, new_password):
+        flash("Password reset successfully.", "success")
+    else:
+        flash("Could not reset password for the selected user.", "danger")
+
+    return redirect(url_for("admin_db.db_dashboard", table="users"))

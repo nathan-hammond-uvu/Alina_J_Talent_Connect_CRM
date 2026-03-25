@@ -83,3 +83,20 @@ class AuthService:
         data.setdefault("users", []).append(user)
         self._store.save(data)
         return user
+
+    def reset_password_for_user(self, user_id: int, new_password: str) -> bool:
+        """Reset a user's password to a newly hashed value.
+
+        Returns True when a matching user is found and updated; False otherwise.
+        """
+        if not new_password:
+            return False
+
+        data = self._store.load()
+        for user in data.get("users", []):
+            if user.get("user_id") == user_id:
+                user["password"] = self.hash_password(new_password)
+                self._store.save(data)
+                return True
+
+        return False

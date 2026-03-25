@@ -66,6 +66,113 @@
   </table>
 </div>
 
+<!-- Card 4: Table Explorer -->
+<div class="card">
+  <h3>&#128269; Table Explorer</h3>
+  <form method="get" action="{{ url_for('admin_db.db_dashboard') }}" class="inline-form" style="margin-bottom: 1rem;">
+    <label for="table"><strong>Table:</strong></label>
+    <select id="table" name="table">
+      {% for table_name in table_names %}
+      <option value="{{ table_name }}" {% if table_name == selected_table %}selected{% endif %}>{{ table_name }}</option>
+      {% endfor %}
+    </select>
+    <button type="submit" class="btn">Load</button>
+  </form>
+
+  {% if selected_table %}
+  <p class="card-description">
+    Showing table <strong>{{ selected_table }}</strong> ({{ preview_total_rows }} row{% if preview_total_rows != 1 %}s{% endif %}).
+  </p>
+
+  <h4>Columns</h4>
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Nullable</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for col in table_columns %}
+      <tr>
+        <td>{{ col.name }}</td>
+        <td>{{ col.type }}</td>
+        <td>{{ col.nullable }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <h4>Rows (Page {{ preview_page }} / {{ preview_total_pages }})</h4>
+  <table class="data-table">
+    <thead>
+      <tr>
+        {% for col_name in preview_columns %}
+        <th>{{ col_name }}</th>
+        {% endfor %}
+      </tr>
+    </thead>
+    <tbody>
+      {% if preview_rows %}
+        {% for row in preview_rows %}
+        <tr>
+          {% for col_name in preview_columns %}
+          {% set value = row[col_name] %}
+          <td>
+            {% if value is mapping or value is sequence and value is not string %}
+              <code>{{ value | tojson }}</code>
+            {% else %}
+              {{ value }}
+            {% endif %}
+          </td>
+          {% endfor %}
+        </tr>
+        {% endfor %}
+      {% else %}
+      <tr>
+        <td colspan="{{ preview_columns|length if preview_columns else 1 }}"><em>No rows in this table.</em></td>
+      </tr>
+      {% endif %}
+    </tbody>
+  </table>
+
+  <div style="display: flex; gap: 0.5rem; margin-top: 0.75rem;">
+    {% if preview_page > 1 %}
+    <a class="btn" href="{{ url_for('admin_db.db_dashboard', table=selected_table, page=preview_page-1) }}">&larr; Previous</a>
+    {% endif %}
+    {% if preview_page < preview_total_pages %}
+    <a class="btn" href="{{ url_for('admin_db.db_dashboard', table=selected_table, page=preview_page+1) }}">Next &rarr;</a>
+    {% endif %}
+  </div>
+
+  {% if selected_table == "users" %}
+  <hr>
+  <h4>Admin Password Reset</h4>
+  <p class="card-description">
+    Reset a selected user's password. The stored value remains hashed; plaintext passwords are never shown.
+  </p>
+  <form method="post" action="{{ url_for('admin_db.reset_user_password') }}" class="inline-form">
+    <label for="user_id"><strong>User:</strong></label>
+    <select id="user_id" name="user_id" required>
+      <option value="">Select user...</option>
+      {% for u in reset_users %}
+      <option value="{{ u.user_id }}">{{ u.username }} (ID {{ u.user_id }})</option>
+      {% endfor %}
+    </select>
+
+    <label for="new_password"><strong>New Password:</strong></label>
+    <input id="new_password" name="new_password" type="password" minlength="8" required>
+
+    <label for="confirm_password"><strong>Confirm:</strong></label>
+    <input id="confirm_password" name="confirm_password" type="password" minlength="8" required>
+
+    <button type="submit" class="btn btn-primary">Reset Password</button>
+  </form>
+  {% endif %}
+  {% endif %}
+</div>
+
 <!-- Card 3: Last Import -->
 <div class="card">
   <h3>&#128337; Import History</h3>
@@ -81,7 +188,7 @@
 
 {% endif %}
 
-<!-- Card 4: Actions -->
+<!-- Card 5: Actions -->
 <div class="card">
   <h3>&#9881;&#65039; Actions</h3>
   {% if is_db_backend %}
