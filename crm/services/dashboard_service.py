@@ -132,7 +132,9 @@ class DashboardService:
                 brand_name = ""
                 if deal:
                     brand = brands_map.get(deal.get("brand_id"))
-                    brand_name = f" ({brand.get('description', 'Brand #' + str(deal['brand_id']))})" if brand else ""
+                    if brand:
+                        brand_desc = brand.get("description") or f"Brand #{deal['brand_id']}"
+                        brand_name = f" ({brand_desc})"
                 items.append({
                     "type": "contract_expiring",
                     "label": "Contract expiring soon",
@@ -150,7 +152,7 @@ class DashboardService:
                 if creator:
                     person = persons.get(creator.get("person_id"), {})
                     creator_label = person.get("display_name") or person.get("full_name") or f"Creator #{creator['creator_id']}"
-                brand_label = brand.get("description", f"Brand #{d['brand_id']}") if brand else ""
+                brand_label = brand.get("description") or f"Brand #{d['brand_id']}" if brand else ""
                 detail = f"Deal #{d['deal_id']}"
                 if creator_label or brand_label:
                     detail += f" — {creator_label}" + (" × " + brand_label if brand_label else "")
