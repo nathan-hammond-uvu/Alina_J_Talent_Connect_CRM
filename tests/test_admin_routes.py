@@ -66,7 +66,7 @@ def _bootstrap(tmp_path: str) -> tuple[str, int, int]:
 @pytest.fixture
 def app_client(tmp_path):
     filepath, admin_id, regular_id = _bootstrap(str(tmp_path))
-    app = create_app(data_path=filepath)
+    app = create_app(data_path=filepath, storage_backend="json")
     app.config["TESTING"] = True
     app.config["WTF_CSRF_ENABLED"] = False
     with app.test_client() as c:
@@ -154,7 +154,7 @@ class TestAdminResetPassword:
         monkeypatch.setenv("DATABASE_URL", f"sqlite:///{sqlite_path}")
         monkeypatch.setenv("CRM_AUTO_IMPORT", "1")
 
-        app = create_app(data_path=filepath)
+        app = create_app(data_path=filepath, storage_backend="sqlite")
         app.config["TESTING"] = True
         app.config["WTF_CSRF_ENABLED"] = False
 
@@ -182,7 +182,7 @@ class TestAdminNavLink:
         """Admin user should see the DB Dashboard link in the sidebar."""
         c, _, _ = app_client
         _login(c, "admin_db_test", "adminpass")
-        resp = c.get("/portal/")
+        resp = c.get("/portal/", follow_redirects=True)
         assert resp.status_code == 200
         assert b"DB Dashboard" in resp.data or b"admin/db" in resp.data
 
@@ -190,6 +190,6 @@ class TestAdminNavLink:
         """Regular user should NOT see the DB Dashboard link."""
         c, _, _ = app_client
         _login(c, "regular_db_test", "userpass")
-        resp = c.get("/portal/")
+        resp = c.get("/portal/", follow_redirects=True)
         assert resp.status_code == 200
         assert b"DB Dashboard" not in resp.data

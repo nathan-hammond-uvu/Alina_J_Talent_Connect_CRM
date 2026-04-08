@@ -15,7 +15,10 @@ entity_bp = Blueprint("entity", __name__, url_prefix="/portal")
 
 def _handle_person_form(f, store, person_svc) -> int:
     """Parse person form fields and return a valid person_id."""
-    mode = f.get("person_mode", "new")
+    mode = f.get("person_mode")
+    if mode not in {"existing", "new"}:
+        # Backward compatibility for older forms posting only person_id.
+        mode = "existing" if f.get("person_id") else "new"
     if mode == "existing":
         pid = int(f.get("person_id", 0) or 0)
         if pid:

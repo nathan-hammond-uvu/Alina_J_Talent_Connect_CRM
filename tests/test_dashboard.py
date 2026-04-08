@@ -57,7 +57,7 @@ def store(tmp_path):
 @pytest.fixture
 def client(tmp_path):
     filepath, admin_user_id = _bootstrap_app(str(tmp_path))
-    app = create_app(data_path=filepath)
+    app = create_app(data_path=filepath, storage_backend="json")
     app.config["TESTING"] = True
     with app.test_client() as c:
         yield c, admin_user_id

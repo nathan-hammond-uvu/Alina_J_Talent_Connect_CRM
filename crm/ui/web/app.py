@@ -20,7 +20,7 @@ from crm.services.contract_service import ContractService
 from crm.policies.access_control import AccessPolicy
 
 
-def create_app(data_path: str | None = None) -> Flask:
+def create_app(data_path: str | None = None, storage_backend: str | None = None) -> Flask:
     """Flask application factory.
 
     Storage backend is selected via environment variables:
@@ -42,7 +42,14 @@ def create_app(data_path: str | None = None) -> Flask:
     # ------------------------------------------------------------------ #
     # Storage backend selection                                            #
     # ------------------------------------------------------------------ #
-    backend = os.environ.get("CRM_STORAGE_BACKEND", "json").lower()
+    # If a caller passes a specific JSON path (common in tests), default to
+    # JSON storage for deterministic behavior unless backend is explicitly set.
+    if storage_backend:
+        backend = storage_backend.lower()
+    elif data_path is not None and "CRM_STORAGE_BACKEND" not in os.environ:
+        backend = "json"
+    else:
+        backend = os.environ.get("CRM_STORAGE_BACKEND", "json").lower()
     database_url = os.environ.get("DATABASE_URL", "")
 
     if backend == "postgres" and database_url:

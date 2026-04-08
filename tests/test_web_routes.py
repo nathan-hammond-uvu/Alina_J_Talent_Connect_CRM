@@ -40,7 +40,7 @@ def _bootstrap(tmp_path: str) -> tuple[str, int]:
 @pytest.fixture
 def client(tmp_path):
     filepath, admin_user_id = _bootstrap(str(tmp_path))
-    app = create_app(data_path=filepath)
+    app = create_app(data_path=filepath, storage_backend="json")
     app.config["TESTING"] = True
     app.config["WTF_CSRF_ENABLED"] = False
     with app.test_client() as c:

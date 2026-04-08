@@ -4,22 +4,67 @@
 {% block content %}
 <div class="page-header">
   <h1>&#128100; Employees</h1>
+  <p class="page-subtitle">Manage employees and link each record to an existing or new person profile.</p>
 </div>
 
 {% if can_edit %}
 <div class="card">
   <h3>Add Employee</h3>
   <form method="post" action="{{ url_for('entity.employees_add') }}" class="entity-form">
-    <div class="form-row">
-      <div class="form-group">
-        <label>Person</label>
-        <select name="person_id" class="form-control" required>
-          <option value="">-- Select Person --</option>
-          {% for p in all_persons %}
-          <option value="{{ p.person_id }}">{{ p.full_name or p.display_name }} (ID: {{ p.person_id }})</option>
-          {% endfor %}
-        </select>
+
+    <div class="person-assignment">
+      <div class="person-mode-toggle">
+        <label class="radio-label">
+          <input type="radio" name="person_mode" value="existing" id="emp_mode_existing" checked onchange="toggleEmployeePersonMode(this)">
+          Link to existing Person
+        </label>
+        <label class="radio-label">
+          <input type="radio" name="person_mode" value="new" id="emp_mode_new" onchange="toggleEmployeePersonMode(this)">
+          Create new Person
+        </label>
       </div>
+
+      <div id="emp_existing_person_section" class="person-section">
+        <div class="form-group">
+          <label>Existing Person <span class="required">*</span></label>
+          <select name="person_id" id="emp_person_id" class="form-control" required>
+            <option value="">-- Select Person --</option>
+            {% for p in all_persons %}
+            <option value="{{ p.person_id }}">{{ p.full_name or p.display_name }} (ID: {{ p.person_id }})</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+
+      <div id="emp_new_person_section" class="person-section" style="display:none">
+        <div class="form-row">
+          <div class="form-group">
+            <label>First Name <span class="required">*</span></label>
+            <input type="text" name="first_name" id="emp_first_name" class="form-control" placeholder="First name">
+          </div>
+          <div class="form-group">
+            <label>Last Name <span class="required">*</span></label>
+            <input type="text" name="last_name" id="emp_last_name" class="form-control" placeholder="Last name">
+          </div>
+          <div class="form-group">
+            <label>Display Name</label>
+            <input type="text" name="display_name" class="form-control" placeholder="Display name">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Email</label>
+            <input type="email" name="email" class="form-control" placeholder="email@example.com">
+          </div>
+          <div class="form-group">
+            <label>Phone</label>
+            <input type="text" name="phone" class="form-control" placeholder="555-555-5555">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-row">
       <div class="form-group">
         <label>Position</label>
         <input type="text" name="position" class="form-control">
@@ -134,4 +179,35 @@
   <p class="no-data">No employees found.</p>
   {% endif %}
 </div>
+
+<script>
+function toggleEmployeePersonMode(radio) {
+  const existingSection = document.getElementById('emp_existing_person_section');
+  const newSection = document.getElementById('emp_new_person_section');
+  const personSelect = document.getElementById('emp_person_id');
+  const firstName = document.getElementById('emp_first_name');
+  const lastName = document.getElementById('emp_last_name');
+
+  if (radio.value === 'existing') {
+    existingSection.style.display = 'block';
+    newSection.style.display = 'none';
+    personSelect.required = true;
+    firstName.required = false;
+    lastName.required = false;
+  } else {
+    existingSection.style.display = 'none';
+    newSection.style.display = 'block';
+    personSelect.required = false;
+    firstName.required = true;
+    lastName.required = true;
+  }
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+  const selectedMode = document.querySelector('input[name="person_mode"]:checked');
+  if (selectedMode) {
+    toggleEmployeePersonMode(selectedMode);
+  }
+});
+</script>
 {% endblock %}
