@@ -1,0 +1,91 @@
+{% extends "base_portal.html" %}
+{% set active_page = "home" %}
+{% block title %}Dashboard – Talent Connect CRM{% endblock %}
+{% block content %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+
+<div class="page-header">
+  <h1>&#128202; Dashboard</h1>
+  <p class="page-subtitle">Welcome back, {{ display_name }}. Here's what's happening today.</p>
+</div>
+
+<!-- ======================================================
+     A) Summary cards
+     ====================================================== -->
+<section class="dash-section" aria-labelledby="cards-heading">
+  <h2 id="cards-heading" class="dash-section-title">Overview</h2>
+  <div class="dash-cards-grid">
+    {% for card in dash.cards %}
+    <a href="{{ card.url }}" class="card-stat {{ card.color_class }}" aria-label="{{ card.label }}: {{ card.value }}">
+      <div class="card-stat-icon" aria-hidden="true">{{ card.icon }}</div>
+      <div class="card-stat-body">
+        <div class="card-stat-value">{{ card.value }}</div>
+        <div class="card-stat-label">{{ card.label }}</div>
+        {% if card.secondary %}
+        <div class="card-stat-secondary">{{ card.secondary }}</div>
+        {% endif %}
+      </div>
+    </a>
+    {% endfor %}
+  </div>
+</section>
+
+<!-- ======================================================
+     B) Needs attention + C) Quick actions  (two-column row)
+     ====================================================== -->
+<div class="dash-two-col">
+
+  <!-- Needs attention -->
+  <section class="dash-section dash-section--attention" aria-labelledby="attention-heading">
+    <h2 id="attention-heading" class="dash-section-title">&#9888;&#65039; Needs Attention</h2>
+    {% if dash.needs_attention %}
+    <ul class="attention-list" role="list">
+      {% for item in dash.needs_attention %}
+      <li class="attention-item attention-item--{{ item.type }}">
+        <a href="{{ item.url }}" class="attention-link">
+          <span class="attention-label">{{ item.label }}</span>
+          <span class="attention-detail">{{ item.detail }}</span>
+        </a>
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    <p class="empty-state">&#10003; No items need attention right now.</p>
+    {% endif %}
+  </section>
+
+  <!-- Quick actions -->
+  <section class="dash-section dash-section--actions" aria-labelledby="actions-heading">
+    <h2 id="actions-heading" class="dash-section-title">&#9889; Quick Actions</h2>
+    <div class="quick-actions-grid">
+      {% for action in dash.quick_actions %}
+      <a href="{{ action.url }}" class="quick-action-btn">
+        <span class="quick-action-icon" aria-hidden="true">{{ action.icon }}</span>
+        <span class="quick-action-label">{{ action.label }}</span>
+      </a>
+      {% endfor %}
+    </div>
+  </section>
+
+</div>
+
+<!-- ======================================================
+     D) Recent activity
+     ====================================================== -->
+<section class="dash-section" aria-labelledby="activity-heading">
+  <h2 id="activity-heading" class="dash-section-title">&#128336; Recent Activity</h2>
+  {% if dash.recent_activity %}
+  <ul class="activity-list" role="list">
+    {% for item in dash.recent_activity %}
+    <li class="activity-item">
+      <span class="activity-type-badge activity-type--{{ item.type | lower | replace(' ', '-') }}">{{ item.type }}</span>
+      <a href="{{ item.url }}" class="activity-label">{{ item.label }}</a>
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p class="empty-state">No recent activity to show yet.</p>
+  {% endif %}
+</section>
+
+{% endblock %}

@@ -80,7 +80,7 @@ class TestAuth:
         c, _ = client
         resp = _login(c)
         assert resp.status_code == 200
-        assert b"Portal Home" in resp.data or b"under construction" in resp.data.lower() or b"Under Construction" in resp.data
+        assert b"Dashboard" in resp.data or b"Portal Home" in resp.data
 
     def test_login_bad_password_shows_error(self, client):
         c, _ = client
@@ -108,9 +108,9 @@ class TestPortalAuthenticated:
     def test_portal_home_accessible(self, client):
         c, _ = client
         _login(c)
-        resp = c.get("/portal/")
+        resp = c.get("/portal/", follow_redirects=True)
         assert resp.status_code == 200
-        assert b"Under Construction" in resp.data
+        assert b"Dashboard" in resp.data
 
     def test_search_page_accessible(self, client):
         c, _ = client

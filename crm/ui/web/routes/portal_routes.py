@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, current_app
+from flask import Blueprint, render_template, request, redirect, url_for, current_app
 
 from crm.ui.web.routes.helpers import login_required, get_current_user, portal_context
 
@@ -8,9 +8,7 @@ portal_bp = Blueprint("portal", __name__, url_prefix="/portal")
 @portal_bp.route("/")
 @login_required
 def portal_home():
-    user = get_current_user()
-    ctx = portal_context(user)
-    return render_template("portal/home.html", **ctx)
+    return redirect(url_for("dashboard.dashboard"))
 
 
 @portal_bp.route("/search")

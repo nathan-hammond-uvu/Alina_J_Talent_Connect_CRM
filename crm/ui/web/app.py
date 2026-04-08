@@ -103,12 +103,14 @@ def create_app(data_path: str | None = None) -> Flask:
     from crm.ui.web.routes.entity_routes import entity_bp
     from crm.ui.web.routes.settings_routes import settings_bp
     from crm.ui.web.routes.admin_db_routes import admin_db_bp
+    from crm.ui.web.routes.dashboard_routes import dashboard_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(portal_bp)
     app.register_blueprint(entity_bp)
     app.register_blueprint(settings_bp)
     app.register_blueprint(admin_db_bp)
+    app.register_blueprint(dashboard_bp)
 
     # Error handlers
     @app.errorhandler(403)
