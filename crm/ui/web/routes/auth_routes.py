@@ -8,14 +8,14 @@ auth_bp = Blueprint("auth", __name__)
 @auth_bp.route("/")
 def home():
     if get_current_user():
-        return redirect(url_for("portal.portal_home"))
+        return redirect(url_for("dashboard.dashboard"))
     return render_template("auth/home.html")
 
 
 @auth_bp.route("/login", methods=["GET", "POST"])
 def login():
     if get_current_user():
-        return redirect(url_for("portal.portal_home"))
+        return redirect(url_for("dashboard.dashboard"))
     error = None
     if request.method == "POST":
         username = request.form.get("username", "").strip()
@@ -24,7 +24,7 @@ def login():
         user = auth_svc.authenticate(username, password)
         if user:
             session["user_id"] = user["user_id"]
-            return redirect(url_for("portal.portal_home"))
+            return redirect(url_for("dashboard.dashboard"))
         error = "Invalid username or password."
     return render_template("auth/login.html", error=error)
 
@@ -32,7 +32,7 @@ def login():
 @auth_bp.route("/register", methods=["GET", "POST"])
 def register():
     if get_current_user():
-        return redirect(url_for("portal.portal_home"))
+        return redirect(url_for("dashboard.dashboard"))
     error = None
     if request.method == "POST":
         username = request.form.get("username", "").strip()
@@ -68,7 +68,7 @@ def register():
                 user = auth_svc.register_user(person_fields, username, password)
                 session["user_id"] = user["user_id"]
                 flash("Registration successful! Welcome.", "success")
-                return redirect(url_for("portal.portal_home"))
+                return redirect(url_for("dashboard.dashboard"))
     return render_template("auth/register.html", error=error)
 
 

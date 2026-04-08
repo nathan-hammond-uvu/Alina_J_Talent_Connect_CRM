@@ -1,0 +1,258 @@
+/* ============================================================
+   Talent Connect CRM – dashboard.css
+   Scoped dashboard styles that layer on top of styles.css
+   ============================================================ */
+
+/* --- Section wrapper -------------------------------------- */
+.dash-section {
+  margin-bottom: 32px;
+}
+
+.dash-section-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #454345;
+  text-transform: uppercase;
+  letter-spacing: .6px;
+  margin-bottom: 14px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid #ede9e5;
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+/* --- Page subtitle ---------------------------------------- */
+.page-subtitle {
+  font-size: 14px;
+  color: #777;
+  margin-top: 4px;
+}
+
+/* --- Summary cards grid ----------------------------------- */
+.dash-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 16px;
+}
+
+.card-stat {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 20px 18px;
+  border-radius: 10px;
+  border: 1px solid #e8e4e0;
+  background: #fff;
+  text-decoration: none;
+  color: inherit;
+  transition: box-shadow .15s, transform .15s;
+  cursor: pointer;
+}
+
+.card-stat:hover {
+  box-shadow: 0 4px 16px rgba(0,0,0,.10);
+  transform: translateY(-2px);
+  text-decoration: none;
+}
+
+.card-stat:focus-visible {
+  outline: 3px solid #454345;
+  outline-offset: 2px;
+}
+
+.card-stat-icon {
+  font-size: 2rem;
+  flex-shrink: 0;
+}
+
+.card-stat-value {
+  font-size: 1.9rem;
+  font-weight: 700;
+  line-height: 1;
+  color: #1a1a1a;
+}
+
+.card-stat-label {
+  font-size: 12px;
+  color: #666;
+  margin-top: 3px;
+}
+
+.card-stat-secondary {
+  font-size: 11px;
+  color: #999;
+  margin-top: 3px;
+}
+
+/* Card accent colours (left border) */
+.card-stat--blue   { border-left: 4px solid #3b82f6; }
+.card-stat--purple { border-left: 4px solid #8b5cf6; }
+.card-stat--green  { border-left: 4px solid #10b981; }
+.card-stat--orange { border-left: 4px solid #f59e0b; }
+
+/* --- Two-column layout ------------------------------------ */
+.dash-two-col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  margin-bottom: 32px;
+}
+
+@media (max-width: 860px) {
+  .dash-two-col {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* --- Needs attention list --------------------------------- */
+.attention-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.attention-item {
+  background: #fffbf5;
+  border: 1px solid #fde8c0;
+  border-left: 4px solid #f59e0b;
+  border-radius: 6px;
+}
+
+.attention-link {
+  display: flex;
+  flex-direction: column;
+  padding: 10px 14px;
+  text-decoration: none;
+  color: inherit;
+  gap: 2px;
+}
+
+.attention-link:hover {
+  background: #fef3c7;
+  border-radius: 6px;
+  text-decoration: none;
+}
+
+.attention-link:focus-visible {
+  outline: 2px solid #f59e0b;
+  outline-offset: 1px;
+  border-radius: 6px;
+}
+
+.attention-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #92400e;
+}
+
+.attention-detail {
+  font-size: 12px;
+  color: #555;
+}
+
+/* Expiring contracts are a bit more urgent */
+.attention-item--contract_expiring {
+  border-left-color: #ef4444;
+  background: #fff5f5;
+  border-color: #fca5a5;
+}
+
+.attention-item--contract_expiring .attention-label {
+  color: #991b1b;
+}
+
+/* --- Empty state ------------------------------------------ */
+.empty-state {
+  font-size: 13px;
+  color: #888;
+  padding: 16px 0;
+}
+
+/* --- Quick actions grid ----------------------------------- */
+.quick-actions-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 10px;
+}
+
+.quick-action-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 16px 10px;
+  border-radius: 8px;
+  background: #f7f5f3;
+  border: 1px solid #e5e2df;
+  color: #454345;
+  text-decoration: none;
+  font-size: 12px;
+  font-weight: 600;
+  text-align: center;
+  transition: background .15s, box-shadow .15s;
+}
+
+.quick-action-btn:hover {
+  background: #ede9e5;
+  box-shadow: 0 2px 8px rgba(0,0,0,.08);
+  text-decoration: none;
+  color: #454345;
+}
+
+.quick-action-btn:focus-visible {
+  outline: 2px solid #454345;
+  outline-offset: 2px;
+}
+
+.quick-action-icon {
+  font-size: 1.6rem;
+}
+
+.quick-action-label {
+  line-height: 1.3;
+}
+
+/* --- Activity list ---------------------------------------- */
+.activity-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.activity-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  background: #faf9f8;
+  border: 1px solid #ede9e5;
+  border-radius: 6px;
+}
+
+.activity-type-badge {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 20px;
+  white-space: nowrap;
+  background: #e5e2df;
+  color: #454345;
+  text-transform: uppercase;
+  letter-spacing: .4px;
+}
+
+.activity-type--creator  { background: #dbeafe; color: #1e40af; }
+.activity-type--brand    { background: #ede9fd; color: #5b21b6; }
+.activity-type--deal     { background: #d1fae5; color: #065f46; }
+.activity-type--contract { background: #fef3c7; color: #92400e; }
+
+.activity-label {
+  font-size: 13px;
+  color: #454345;
+  text-decoration: none;
+}
+
+.activity-label:hover {
+  text-decoration: underline;
+}
