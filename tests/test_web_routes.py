@@ -33,6 +33,49 @@ def _bootstrap(tmp_path: str) -> tuple[str, int]:
         "user_id": user_id, "username": "admin_test",
         "password": hashed, "role_id": admin_role["role_id"], "person_id": person_id,
     })
+
+    # Low-privilege user with a scoped employee + creator record
+    low_person_id = store.next_id(data)
+    data["persons"].append({
+        "person_id": low_person_id, "first_name": "Low", "last_name": "User",
+        "full_name": "Low User", "display_name": "Low User",
+        "email": "low@example.com", "phone": "", "address": "", "city": "", "state": "", "zip": "",
+    })
+    low_user_role = next(r for r in data["roles"] if r["role_name"] == "User")
+    low_user_id = store.next_id(data)
+    low_auth = AuthService(store)
+    low_hashed = low_auth.hash_password("lowpass")
+    data["users"].append({
+        "user_id": low_user_id, "username": "low_test",
+        "password": low_hashed, "role_id": low_user_role["role_id"], "person_id": low_person_id,
+    })
+
+    low_employee_id = store.next_id(data)
+    data["employees"].append({
+        "employee_id": low_employee_id,
+        "person_id": low_person_id,
+        "position": "Associate",
+        "title": "Creator Liaison",
+        "manager_id": 0,
+        "start_date": "2024-01-01",
+        "end_date": None,
+        "is_active": True,
+        "is_manager": False,
+    })
+
+    data["creators"].append({
+        "creator_id": store.next_id(data),
+        "person_id": low_person_id,
+        "employee_id": low_employee_id,
+        "description": "Low scope creator",
+    })
+
+    data["creators"].append({
+        "creator_id": store.next_id(data),
+        "person_id": person_id,
+        "employee_id": 999,
+        "description": "Out of scope creator",
+    })
     store.save(data)
     return filepath, user_id
 
@@ -230,3 +273,59 @@ class TestRBAC:
         # Delete it
         resp = c.post(f"/portal/employees/{emp['employee_id']}/delete", follow_redirects=True)
         assert resp.status_code == 200
+
+
+class TestApiV1Creators:
+    def test_api_requires_authentication(self, client):
+        c, _ = client
+        resp = c.get("/api/v1/items")
+        assert resp.status_code == 401
+        assert resp.is_json
+        assert resp.get_json() == {"error": "Unauthorized"}
+
+    def test_api_list_returns_scoped_items(self, client):
+        c, _ = client
+        _login(c, username="low_test", password="lowpass")
+        resp = c.get("/api/v1/items")
+        assert resp.status_code == 200
+        payload = resp.get_json()
+        assert "items" in payload
+        assert len(payload["items"]) == 1
+        assert payload["items"][0]["name"] == "Low User"
+
+    def test_api_detail_returns_in_scope_item(self, client):
+        c, _ = client
+        _login(c, username="low_test", password="lowpass")
+        resp = c.get("/api/v1/items")
+        item_id = resp.get_json()["items"][0]["id"]
+
+        detail = c.get(f"/api/v1/items/{item_id}")
+        assert detail.status_code == 200
+        payload = detail.get_json()
+        assert payload["item"]["id"] == item_id
+
+    def test_api_detail_returns_404_for_missing_item(self, client):
+        c, _ = client
+        _login(c, username="low_test", password="lowpass")
+        resp = c.get("/api/v1/items/999999")
+        assert resp.status_code == 404
+        assert resp.get_json() == {"error": "Not found"}
+
+    def test_api_detail_returns_404_for_out_of_scope_item(self, client):
+        c, _ = client
+        _login(c, username="low_test", password="lowpass")
+        resp = c.get("/api/v1/items")
+        low_item_id = resp.get_json()["items"][0]["id"]
+
+        c.post("/logout", follow_redirects=False)
+        admin_login = _login(c)
+        assert admin_login.status_code == 200
+        admin_resp = c.get("/api/v1/items")
+        admin_items = admin_resp.get_json()["items"]
+        out_of_scope_id = next(item["id"] for item in admin_items if item["id"] != low_item_id)
+
+        c.post("/logout", follow_redirects=False)
+        _login(c, username="low_test", password="lowpass")
+        detail = c.get(f"/api/v1/items/{out_of_scope_id}")
+        assert detail.status_code == 404
+        assert detail.get_json() == {"error": "Not found"}

@@ -160,6 +160,26 @@ Security notes:
 - No arbitrary SQL execution UI is exposed.
 - Connection strings are not displayed in dashboard output.
 
+## Versioned API
+
+The app exposes a small JSON API under `/api/v1` for authenticated clients.
+
+Endpoints:
+
+- `GET /api/v1/items` returns the authenticated user's scoped creator records as JSON.
+- `GET /api/v1/items/<item_id>` returns one scoped creator record as JSON.
+
+Responses:
+
+- Unauthenticated requests return `401` with `{"error": "Unauthorized"}`.
+- Missing or out-of-scope items return `404` with `{"error": "Not found"}`.
+
+Example:
+
+```powershell
+GET /api/v1/items
+```
+
 ## CLI Entry Point
 
 CLI launcher:
