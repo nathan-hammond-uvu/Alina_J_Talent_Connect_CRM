@@ -166,8 +166,17 @@ The app exposes a small JSON API under `/api/v1` for authenticated clients.
 
 Endpoints:
 
-- `GET /api/v1/items` returns the authenticated user's scoped creator records as JSON.
-- `GET /api/v1/items/<item_id>` returns one scoped creator record as JSON.
+- `GET /api/v1/roles` and `GET /api/v1/roles/<item_id>`
+- `GET /api/v1/persons` and `GET /api/v1/persons/<item_id>`
+- `GET /api/v1/users` and `GET /api/v1/users/<item_id>`
+- `GET /api/v1/employees` and `GET /api/v1/employees/<item_id>`
+- `GET /api/v1/creators` and `GET /api/v1/creators/<item_id>`
+- `GET /api/v1/social_media_accounts` and `GET /api/v1/social_media_accounts/<item_id>`
+- `GET /api/v1/brands` and `GET /api/v1/brands/<item_id>`
+- `GET /api/v1/brand_contacts` and `GET /api/v1/brand_contacts/<item_id>`
+- `GET /api/v1/deals` and `GET /api/v1/deals/<item_id>`
+- `GET /api/v1/contracts` and `GET /api/v1/contracts/<item_id>`
+- `GET /api/v1/items` and `GET /api/v1/items/<item_id>` remain as a legacy alias for creators.
 
 Responses:
 

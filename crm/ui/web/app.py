@@ -17,6 +17,7 @@ from crm.services.brand_contact_service import BrandContactService
 from crm.services.person_service import PersonService
 from crm.services.deal_service import DealService
 from crm.services.contract_service import ContractService
+from crm.services.api_v1_service import ApiV1Service
 from crm.policies.access_control import AccessPolicy
 
 
@@ -102,6 +103,7 @@ def create_app(data_path: str | None = None, storage_backend: str | None = None)
     app.config["person_service"] = PersonService(store)
     app.config["deal_service"] = DealService(store)
     app.config["contract_service"] = ContractService(store)
+    app.config["api_v1_service"] = ApiV1Service(store)
     app.config["access_policy"] = AccessPolicy(store)
 
     # Register blueprints

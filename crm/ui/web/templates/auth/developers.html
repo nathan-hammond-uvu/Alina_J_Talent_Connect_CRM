@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Developer API Guide – Talent Connect CRM</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+  <style>
+    .dev-layout {
+      display: flex;
+      min-height: 100vh;
+      background: hsl(var(--muted));
+    }
+    .dev-sidebar {
+      width: 280px;
+      background: hsl(var(--card));
+      border-right: 1px solid hsl(var(--border));
+      box-shadow: var(--shadow-sm);
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      overflow-y: auto;
+      padding: 0;
+    }
+    .dev-sidebar-header {
+      padding: 24px 20px;
+      border-bottom: 2px solid hsl(var(--border));
+      background: hsl(var(--primary));
+      color: hsl(var(--primary-foreground));
+      text-align: center;
+    }
+    .dev-sidebar-header h2 {
+      margin: 0;
+      font-size: 18px;
+      font-weight: 600;
+    }
+    .dev-sidebar-header p {
+      margin: 8px 0 0 0;
+      font-size: 12px;
+      opacity: 0.9;
+    }
+    .dev-nav-list {
+      list-style: none;
+      padding: 16px 0;
+      margin: 0;
+    }
+    .dev-nav-item {
+      margin: 0;
+    }
+    .dev-nav-item a {
+      display: block;
+      padding: 12px 20px;
+      color: hsl(var(--foreground));
+      text-decoration: none;
+      border-left: 3px solid transparent;
+      transition: all var(--transition-fast);
+      font-size: 14px;
+    }
+    .dev-nav-item a:hover {
+      background: hsl(var(--accent));
+      border-left-color: hsl(var(--primary));
+      padding-left: 24px;
+    }
+    .dev-nav-item.active a {
+      background: hsl(var(--accent));
+      border-left-color: hsl(var(--primary));
+      color: hsl(var(--primary));
+      font-weight: 600;
+    }
+    .dev-main {
+      flex: 1;
+      padding: 48px;
+      max-width: 900px;
+    }
+    .dev-section {
+      background: hsl(var(--card));
+      padding: 32px;
+      margin-bottom: 24px;
+      border-radius: 8px;
+      box-shadow: var(--shadow-soft);
+    }
+    .dev-section h2 {
+      margin: 0 0 16px 0;
+      color: hsl(var(--foreground));
+      font-size: 24px;
+      font-weight: 600;
+      border-bottom: 2px solid hsl(var(--primary));
+      padding-bottom: 12px;
+    }
+    .dev-section h3 {
+      margin: 24px 0 12px 0;
+      color: hsl(var(--foreground));
+      font-size: 18px;
+      font-weight: 600;
+    }
+    .dev-section p {
+      margin: 12px 0;
+      line-height: 1.6;
+      color: hsl(var(--muted-foreground));
+    }
+    .dev-code {
+      background: #1e1e1e;
+      color: #d4d4d4;
+      padding: 16px;
+      border-radius: 6px;
+      overflow-x: auto;
+      margin: 16px 0;
+      font-family: 'Courier New', monospace;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+    .dev-endpoint {
+      background: hsl(var(--accent));
+      padding: 12px 16px;
+      border-left: 4px solid hsl(var(--primary));
+      margin: 12px 0;
+      border-radius: 4px;
+      font-family: monospace;
+      color: hsl(var(--foreground));
+    }
+    .dev-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+      margin: 16px 0;
+    }
+    @media (max-width: 768px) {
+      .dev-layout {
+        flex-direction: column;
+      }
+      .dev-sidebar {
+        width: 100%;
+        height: auto;
+        position: static;
+        border-right: none;
+        border-bottom: 1px solid #e0e0e0;
+      }
+      .dev-main {
+        padding: 24px;
+      }
+      .dev-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+    .dev-hero {
+      background: hsl(var(--primary));
+      color: hsl(var(--primary-foreground));
+      padding: 48px 32px;
+      border-radius: 8px;
+      margin-bottom: 24px;
+      text-align: center;
+    }
+    .dev-hero h1 {
+      margin: 0 0 12px 0;
+      font-size: 32px;
+    }
+    .dev-hero p {
+      margin: 0;
+      font-size: 16px;
+      opacity: 0.95;
+    }
+    .dev-list {
+      list-style: none;
+      padding: 0;
+      margin: 16px 0;
+    }
+    .dev-list li {
+      padding: 8px 0 8px 24px;
+      position: relative;
+      color: hsl(var(--muted-foreground));
+    }
+    .dev-list li:before {
+      content: "▸";
+      position: absolute;
+      left: 0;
+      color: hsl(var(--primary));
+      font-weight: bold;
+    }
+    .dev-footer {
+      background: hsl(var(--card));
+      padding: 32px;
+      margin-top: 32px;
+      border-radius: 8px;
+      text-align: center;
+      box-shadow: var(--shadow-soft);
+    }
+    .dev-footer a {
+      display: inline-block;
+      margin: 0 12px;
+    }
+  </style>
+</head>
+<body class="dev-docs">
+  <div class="dev-layout">
+    <!-- Sidebar Navigation -->
+    <nav class="dev-sidebar">
+      <div class="dev-sidebar-header">
+        <h2>📚 API Docs</h2>
+        <p>v1.0</p>
+      </div>
+      <ul class="dev-nav-list">
+        <li class="dev-nav-item active"><a href="#intro">Introduction</a></li>
+        <li class="dev-nav-item"><a href="#auth">Authentication</a></li>
+        <li class="dev-nav-item"><a href="#endpoints">Endpoints</a></li>
+        <li class="dev-nav-item"><a href="#examples">Examples</a></li>
+        <li class="dev-nav-item"><a href="#responses">Response Format</a></li>
+        <li class="dev-nav-item"><a href="#usage">Usage Guide</a></li>
+      </ul>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="dev-main">
+      <div class="dev-hero">
+        <h1>Talent Connect CRM API</h1>
+        <p>Build integrations with our JSON-based API. Read CRM records securely.</p>
+      </div>
+
+      <!-- Introduction -->
+      <section class="dev-section" id="intro">
+        <h2>Introduction</h2>
+        <p>The Talent Connect CRM API provides read access to all CRM resources using a clean, RESTful JSON interface.</p>
+        <p><strong>Base URL:</strong></p>
+        <div class="dev-code">https://your-host.example.com/api/v1</div>
+        <p>All responses are JSON. Each endpoint returns data scoped to the authenticated user's permissions.</p>
+      </section>
+
+      <!-- Authentication -->
+      <section class="dev-section" id="auth">
+        <h2>Authentication</h2>
+        <p>The API uses session-based authentication, the same as the web application.</p>
+        <h3>Getting Started</h3>
+        <ul class="dev-list">
+          <li><a href="{{ url_for('auth.login') }}">Log in</a> with your credentials</li>
+          <li>Your session cookie authenticates subsequent API requests</li>
+          <li>Requests without valid sessions return <code>401 Unauthorized</code></li>
+        </ul>
+        <h3>Security Notes</h3>
+        <ul class="dev-list">
+          <li>User passwords are never exposed in API responses</li>
+          <li>Out-of-scope or missing resources return <code>404 Not Found</code> (no data leakage)</li>
+          <li>All data is filtered by role-based access control (RBAC)</li>
+        </ul>
+      </section>
+
+      <!-- Endpoints -->
+      <section class="dev-section" id="endpoints">
+        <h2>Available Endpoints</h2>
+        <h3>Models</h3>
+        <p>Each model has a list endpoint and a detail endpoint:</p>
+        <div class="dev-grid">
+          <div>
+            <strong>List</strong>
+            <div class="dev-endpoint">GET /api/v1/&#123;model&#125;</div>
+          </div>
+          <div>
+            <strong>Detail</strong>
+            <div class="dev-endpoint">GET /api/v1/&#123;model&#125;/&#123;id&#125;</div>
+          </div>
+        </div>
+        <h3>Supported Models</h3>
+        <p>Use these model names in the endpoint URLs:</p>
+        <ul class="dev-list">
+          <li><code>roles</code> – System roles (Admin, Manager, etc.)</li>
+          <li><code>persons</code> – Contact information (shared by users, employees, etc.)</li>
+          <li><code>users</code> – User accounts (passwords omitted)</li>
+          <li><code>employees</code> – Employee records</li>
+          <li><code>creators</code> – Creator / Talent records</li>
+          <li><code>social_media_accounts</code> – Creator social links</li>
+          <li><code>brands</code> – Brand records</li>
+          <li><code>brand_contacts</code> – Brand contact representatives</li>
+          <li><code>deals</code> – Deal records (creator + brand)</li>
+          <li><code>contracts</code> – Contract records</li>
+        </ul>
+        <h3>Legacy Endpoints</h3>
+        <p>For backward compatibility:</p>
+        <div class="dev-endpoint">GET /api/v1/items</div>
+        <div class="dev-endpoint">GET /api/v1/items/&#123;id&#125;</div>
+        <p style="color: #999; font-size: 12px; margin-top: 8px;">These are aliases for <code>/api/v1/creators</code></p>
+      </section>
+
+      <!-- Examples -->
+      <section class="dev-section" id="examples">
+        <h2>API Examples</h2>
+        <h3>List Creators</h3>
+        <div class="dev-code">GET /api/v1/creators</div>
+        <h3>Get a Single Creator</h3>
+        <div class="dev-code">GET /api/v1/creators/11</div>
+        <h3>List Deals</h3>
+        <div class="dev-code">GET /api/v1/deals</div>
+        <h3>Get a Specific Contract</h3>
+        <div class="dev-code">GET /api/v1/contracts/5</div>
+        <h3>Using cURL</h3>
+        <div class="dev-code">curl -i https://your-host.example.com/api/v1/creators</div>
+      </section>
+
+      <!-- Response Format -->
+      <section class="dev-section" id="responses">
+        <h2>Response Format</h2>
+        <h3>Success: List Response (200 OK)</h3>
+        <div class="dev-code">{
+  "creators": [
+    {
+      "id": 11,
+      "creator_id": 11,
+      "person_id": 10,
+      "employee_id": 9,
+      "name": "Nate",
+      "description": "Test"
+    }
+  ]
+}</div>
+        <h3>Success: Detail Response (200 OK)</h3>
+        <div class="dev-code">{
+  "creator": {
+    "id": 11,
+    "creator_id": 11,
+    "person_id": 10,
+    "employee_id": 9,
+    "name": "Nate",
+    "description": "Test"
+  }
+}</div>
+        <h3>Error: Unauthorized (401)</h3>
+        <div class="dev-code">{
+  "error": "Unauthorized"
+}</div>
+        <h3>Error: Not Found (404)</h3>
+        <div class="dev-code">{
+  "error": "Not found"
+}</div>
+      </section>
+
+      <!-- Usage Guide -->
+      <section class="dev-section" id="usage">
+        <h2>Quick Start</h2>
+        <h3>Step 1: Log In</h3>
+        <p>Visit the <a href="{{ url_for('auth.login') }}">login page</a> and authenticate with your credentials.</p>
+        <h3>Step 2: Open Your API Client</h3>
+        <p>Use <code>curl</code>, Postman, JavaScript <code>fetch()</code>, or any HTTP tool.</p>
+        <h3>Step 3: Make Your First Request</h3>
+        <div class="dev-code">curl -i https://your-host.example.com/api/v1/creators</div>
+        <h3>Step 4: Parse the Response</h3>
+        <p>Extract and use the JSON data in your application. All records include an <code>id</code> field for referencing and detail calls.</p>
+        <h3>Common Patterns</h3>
+        <ul class="dev-list">
+          <li><strong>Fetch all records:</strong> <code>GET /api/v1/creators</code></li>
+          <li><strong>Fetch one record:</strong> <code>GET /api/v1/creators/11</code></li>
+          <li><strong>Handle 404:</strong> Record is out of scope or doesn't exist</li>
+          <li><strong>Handle 401:</strong> Session expired; log in again</li>
+        </ul>
+      </section>
+
+      <!-- Footer -->
+      <div class="dev-footer">
+        <h3 style="margin-top: 0;">Ready to Build?</h3>
+        <p><a href="{{ url_for('auth.login') }}" class="btn btn-primary">Log In</a></p>
+        <p style="font-size: 12px; color: #999; margin-top: 16px;">
+          Questions? Check the <a href="{{ url_for('auth.home') }}">main site</a> or contact support.
+        </p>
+      </div>
+    </main>
+  </div>
+</body>
+</html>

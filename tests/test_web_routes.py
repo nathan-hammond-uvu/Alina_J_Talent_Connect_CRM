@@ -50,6 +50,15 @@ def _bootstrap(tmp_path: str) -> tuple[str, int]:
         "password": low_hashed, "role_id": low_user_role["role_id"], "person_id": low_person_id,
     })
 
+    employee_role = next(r for r in data["roles"] if r["role_name"] == "Employee")
+    employee_user_id = store.next_id(data)
+    employee_auth = AuthService(store)
+    employee_hashed = employee_auth.hash_password("employeepass")
+    data["users"].append({
+        "user_id": employee_user_id, "username": "employee_test",
+        "password": employee_hashed, "role_id": employee_role["role_id"], "person_id": low_person_id,
+    })
+
     low_employee_id = store.next_id(data)
     data["employees"].append({
         "employee_id": low_employee_id,
@@ -70,11 +79,62 @@ def _bootstrap(tmp_path: str) -> tuple[str, int]:
         "description": "Low scope creator",
     })
 
+    low_creator_id = data["creators"][-1]["creator_id"]
+
     data["creators"].append({
         "creator_id": store.next_id(data),
         "person_id": person_id,
         "employee_id": 999,
         "description": "Out of scope creator",
+    })
+
+    social_media_id = store.next_id(data)
+    data["social_media_accounts"].append({
+        "social_media_id": social_media_id,
+        "creator_id": low_creator_id,
+        "account_type": "Instagram",
+        "link": "https://instagram.com/low-user",
+    })
+
+    brand_id = store.next_id(data)
+    data["brands"].append({
+        "brand_id": brand_id,
+        "name": "Acme Media",
+        "industry": "Media",
+        "website": "https://acme.example.com",
+        "notes": "Primary brand",
+    })
+
+    brand_contact_id = store.next_id(data)
+    data["brand_contacts"].append({
+        "brand_contact_id": brand_contact_id,
+        "person_id": low_person_id,
+        "brand_id": brand_id,
+        "notes": "Brand contact for Acme Media",
+    })
+
+    deal_id = store.next_id(data)
+    data["deals"].append({
+        "deal_id": deal_id,
+        "creator_id": low_creator_id,
+        "brand_id": brand_id,
+        "brand_contact_id": brand_contact_id,
+        "pitch_date": "2024-02-01",
+        "is_active": True,
+        "is_successful": False,
+    })
+
+    contract_id = store.next_id(data)
+    data["contracts"].append({
+        "contract_id": contract_id,
+        "deal_id": deal_id,
+        "details": "Annual sponsorship contract",
+        "payment": 5000.0,
+        "agency_percentage": 12.5,
+        "start_date": "2024-03-01",
+        "end_date": "2024-12-31",
+        "status": "Pending",
+        "is_approved": False,
     })
     store.save(data)
     return filepath, user_id
@@ -110,6 +170,12 @@ class TestPublicRoutes:
         c, _ = client
         resp = c.get("/register")
         assert resp.status_code == 200
+
+    def test_developers_page_accessible(self, client):
+        c, _ = client
+        resp = c.get("/developers")
+        assert resp.status_code == 200
+        assert b"API" in resp.data or b"Developers" in resp.data
 
     def test_portal_redirects_to_login_unauthenticated(self, client):
         c, _ = client
@@ -285,7 +351,7 @@ class TestApiV1Creators:
 
     def test_api_list_returns_scoped_items(self, client):
         c, _ = client
-        _login(c, username="low_test", password="lowpass")
+        _login(c, username="employee_test", password="employeepass")
         resp = c.get("/api/v1/items")
         assert resp.status_code == 200
         payload = resp.get_json()
@@ -295,7 +361,7 @@ class TestApiV1Creators:
 
     def test_api_detail_returns_in_scope_item(self, client):
         c, _ = client
-        _login(c, username="low_test", password="lowpass")
+        _login(c, username="employee_test", password="employeepass")
         resp = c.get("/api/v1/items")
         item_id = resp.get_json()["items"][0]["id"]
 
@@ -306,14 +372,14 @@ class TestApiV1Creators:
 
     def test_api_detail_returns_404_for_missing_item(self, client):
         c, _ = client
-        _login(c, username="low_test", password="lowpass")
+        _login(c, username="employee_test", password="employeepass")
         resp = c.get("/api/v1/items/999999")
         assert resp.status_code == 404
         assert resp.get_json() == {"error": "Not found"}
 
     def test_api_detail_returns_404_for_out_of_scope_item(self, client):
         c, _ = client
-        _login(c, username="low_test", password="lowpass")
+        _login(c, username="employee_test", password="employeepass")
         resp = c.get("/api/v1/items")
         low_item_id = resp.get_json()["items"][0]["id"]
 
@@ -325,7 +391,51 @@ class TestApiV1Creators:
         out_of_scope_id = next(item["id"] for item in admin_items if item["id"] != low_item_id)
 
         c.post("/logout", follow_redirects=False)
-        _login(c, username="low_test", password="lowpass")
+        _login(c, username="employee_test", password="employeepass")
         detail = c.get(f"/api/v1/items/{out_of_scope_id}")
         assert detail.status_code == 404
         assert detail.get_json() == {"error": "Not found"}
+
+
+class TestApiV1Models:
+    @pytest.mark.parametrize(
+        ("path", "list_key", "singular_key"),
+        [
+            ("roles", "roles", "role"),
+            ("persons", "persons", "person"),
+            ("users", "users", "user"),
+            ("employees", "employees", "employee"),
+            ("creators", "creators", "creator"),
+            ("social_media_accounts", "social_media_accounts", "social_media_account"),
+            ("brands", "brands", "brand"),
+            ("brand_contacts", "brand_contacts", "brand_contact"),
+            ("deals", "deals", "deal"),
+            ("contracts", "contracts", "contract"),
+        ],
+    )
+    def test_model_list_and_detail(self, client, path, list_key, singular_key):
+        c, _ = client
+        _login(c)
+        resp = c.get(f"/api/v1/{path}")
+        assert resp.status_code == 200
+        payload = resp.get_json()
+        assert list_key in payload
+        assert len(payload[list_key]) >= 1
+
+        first_item = payload[list_key][0]
+        item_id = first_item.get("id")
+        assert item_id is not None
+
+        detail = c.get(f"/api/v1/{path}/{item_id}")
+        assert detail.status_code == 200
+        detail_payload = detail.get_json()
+        assert singular_key in detail_payload
+        assert detail_payload[singular_key].get("id") == item_id
+
+    def test_users_api_omits_password(self, client):
+        c, _ = client
+        _login(c)
+        resp = c.get("/api/v1/users")
+        assert resp.status_code == 200
+        first_item = resp.get_json()["users"][0]
+        assert "password" not in first_item

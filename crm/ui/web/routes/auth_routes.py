@@ -72,6 +72,11 @@ def register():
     return render_template("auth/register.html", error=error)
 
 
+@auth_bp.route("/developers")
+def developers():
+    return render_template("auth/developers.html")
+
+
 @auth_bp.route("/logout", methods=["GET", "POST"])
 def logout():
     session.clear()
