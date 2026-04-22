@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: alina-j-talent-connect-crm
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn wsgi:app --bind 0.0.0.0:${PORT:-8000}
+    envVars:
+      - key: CRM_ENV
+        value: production
+      - key: CRM_STORAGE_BACKEND
+        value: json
+      - key: CRM_AUTO_IMPORT
+        value: "0"
+      - key: DATA_JSON_PATH
+        value: data.json
+      - key: SECRET_KEY
+        generateValue: true

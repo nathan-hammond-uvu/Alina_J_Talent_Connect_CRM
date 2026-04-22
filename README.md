@@ -50,7 +50,18 @@ python -m venv .venv
 pip install -r requirements.txt
 ```
 
-### 3. Run the web app (default JSON backend)
+### 3. Configure environment variables
+
+Copy `.env.example` to `.env` and set values for your environment.
+
+Minimum local setup:
+
+```powershell
+$env:CRM_ENV="development"
+$env:SECRET_KEY="replace-with-a-local-secret"
+```
+
+### 4. Run the web app (default JSON backend)
 
 ```powershell
 python -m flask --app crm.ui.web.app:create_app run --debug
@@ -67,10 +78,14 @@ Backend selection is controlled by environment variables in the Flask app factor
 ### Environment Variables
 
 - `CRM_STORAGE_BACKEND`: `json` (default), `sqlite`, or `postgres`
-- `DATABASE_URL`: required for postgres, optional for sqlite
+- `DATABASE_URL`: required for `postgres`, optional for `sqlite`
 - `CRM_AUTO_IMPORT`: set to `1` to auto-import from `data.json` at startup for db backends
-- `SECRET_KEY`: Flask session secret (set a strong value outside local dev)
+- `SECRET_KEY`: Flask session secret; required when `CRM_ENV=production`
+- `CRM_ENV`: `development` (default) or `production`
+- `DATA_JSON_PATH`: path to JSON seed/migration file (default `data.json`)
 - `FLASK_DEBUG`: set to `1` for debug mode when running via `python crm/ui/web/app.py`
+- `HOST`: host used only when running `python crm/ui/web/app.py` directly (default `127.0.0.1`)
+- `PORT`: port used by local direct run and deployment process managers
 
 ### JSON Backend (default)
 
@@ -244,5 +259,51 @@ pytest tests/test_postgres_schema.py
   2. verify `/admin/db` connectivity
   3. run import from dashboard (or set `CRM_AUTO_IMPORT=1`)
   4. validate core entity pages and auth workflows
+
+## WSGI and Render Deployment
+
+This project is production-ready with Gunicorn and a WSGI entrypoint in `wsgi.py`.
+
+### Gunicorn Start Command
+
+Use this command in production:
+
+```bash
+gunicorn wsgi:app --bind 0.0.0.0:${PORT:-8000}
+```
+
+### Required Production Environment Variables
+
+- `CRM_ENV=production`
+- `SECRET_KEY=<strong-random-secret>`
+
+Optional (depending on backend choice):
+
+- `CRM_STORAGE_BACKEND=json|sqlite|postgres`
+- `DATABASE_URL=<connection-url>` (required for postgres)
+- `CRM_AUTO_IMPORT=0|1`
+- `DATA_JSON_PATH=data.json`
+
+### Render Setup
+
+Option 1: Use the included `render.yaml` blueprint.
+
+Option 2: Manual setup in Render Web Service settings:
+
+- Build Command: `pip install -r requirements.txt`
+- Start Command: `gunicorn wsgi:app --bind 0.0.0.0:${PORT:-8000}`
+- Environment Variables:
+  - `CRM_ENV=production`
+  - `SECRET_KEY=<generate-a-strong-secret>`
+  - `CRM_STORAGE_BACKEND=json` (or `sqlite`/`postgres`)
+  - `DATABASE_URL=<set when using postgres>`
+  - `CRM_AUTO_IMPORT=0`
+  - `DATA_JSON_PATH=data.json`
+
+Clean-environment startup contract:
+
+1. `pip install -r requirements.txt`
+2. Set environment variables
+3. `gunicorn wsgi:app --bind 0.0.0.0:${PORT:-8000}`
 
 

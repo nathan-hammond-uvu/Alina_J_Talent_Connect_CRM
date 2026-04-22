@@ -20,6 +20,23 @@ from crm.services.contract_service import ContractService
 from crm.services.api_v1_service import ApiV1Service
 from crm.policies.access_control import AccessPolicy
 
+load_dotenv()
+
+
+def _is_truthy(value: str | None) -> bool:
+    return (value or "").strip().lower() in {"1", "true", "yes", "on"}
+
+
+def _is_production_env() -> bool:
+    return os.environ.get("CRM_ENV", "development").strip().lower() == "production"
+
+
+def _require_env(name: str) -> str:
+    value = os.environ.get(name, "").strip()
+    if not value:
+        raise RuntimeError(f"Missing required environment variable: {name}")
+    return value
+
 
 def create_app(data_path: str | None = None, storage_backend: str | None = None) -> Flask:
     """Flask application factory.
@@ -36,9 +53,13 @@ def create_app(data_path: str | None = None, storage_backend: str | None = None)
         template_folder="templates",
         static_folder="static",
     )
-    app.secret_key = os.environ.get("SECRET_KEY", "dev-secret-key-change-in-prod")
+    if _is_production_env():
+        app.secret_key = _require_env("SECRET_KEY")
+    else:
+        # Local/test default only; production must set SECRET_KEY.
+        app.secret_key = os.environ.get("SECRET_KEY", "dev-local-only-secret")
 
-    resolved_path = data_path or "data.json"
+    resolved_path = data_path or os.environ.get("DATA_JSON_PATH", "data.json")
 
     # ------------------------------------------------------------------ #
     # Storage backend selection                                            #
@@ -51,15 +72,20 @@ def create_app(data_path: str | None = None, storage_backend: str | None = None)
         backend = "json"
     else:
         backend = os.environ.get("CRM_STORAGE_BACKEND", "json").lower()
-    database_url = os.environ.get("DATABASE_URL", "")
+    database_url = os.environ.get("DATABASE_URL", "").strip()
 
-    if backend == "postgres" and database_url:
+    if backend == "postgres" and not database_url:
+        raise RuntimeError(
+            "DATABASE_URL is required when CRM_STORAGE_BACKEND is 'postgres'."
+        )
+
+    if backend == "postgres":
         from crm.persistence.postgres_store import PostgresDataStore
         store = PostgresDataStore(database_url)
         store.ensure_schema()
 
         # Optional automatic import from data.json at startup
-        if os.environ.get("CRM_AUTO_IMPORT", "0") == "1":
+        if _is_truthy(os.environ.get("CRM_AUTO_IMPORT", "0")):
             from crm.persistence.postgres_import import import_from_json
             result = import_from_json(resolved_path, store)
             if not result.get("skipped"):
@@ -72,7 +98,7 @@ def create_app(data_path: str | None = None, storage_backend: str | None = None)
         store.ensure_schema()
 
         # Optional automatic import from data.json at startup
-        if os.environ.get("CRM_AUTO_IMPORT", "0") == "1":
+        if _is_truthy(os.environ.get("CRM_AUTO_IMPORT", "0")):
             existing = store.load()
             if not existing.get("roles"):
                 import json
@@ -143,4 +169,10 @@ def create_app(data_path: str | None = None, storage_backend: str | None = None)
 
 
 if __name__ == "__main__":
-    create_app().run(debug=os.environ.get("FLASK_DEBUG", "0") == "1")
+    host = os.environ.get("HOST", "127.0.0.1")
+    port = int(os.environ.get("PORT", "5000"))
+    create_app().run(
+        host=host,
+        port=port,
+        debug=_is_truthy(os.environ.get("FLASK_DEBUG", "0")),
+    )
